@@ -3,9 +3,11 @@ package ru.vikulinva.orderservice.domain.aggregate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import ru.vikulinva.orderservice.domain.entity.OrderItem;
+import ru.vikulinva.orderservice.domain.event.OrderCancelled;
 import ru.vikulinva.orderservice.domain.event.OrderConfirmed;
 import ru.vikulinva.orderservice.domain.event.OrderCreated;
 import ru.vikulinva.orderservice.domain.valueobject.Address;
+import ru.vikulinva.orderservice.domain.valueobject.CancellationReason;
 import ru.vikulinva.orderservice.domain.valueobject.CustomerId;
 import ru.vikulinva.orderservice.domain.valueobject.Money;
 import ru.vikulinva.orderservice.domain.valueobject.OrderId;
@@ -127,6 +129,46 @@ class OrderTest {
         assertThatThrownBy(order::confirm)
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("BR-013");
+    }
+
+    @Test
+    @DisplayName("cancel: DRAFT → CANCELLED и регистрирует OrderCancelled")
+    void cancel_fromDraft_emitsOrderCancelled() {
+        var order = sampleOrder();
+        order.clearDomainEvents();
+
+        order.cancel(CancellationReason.of("CHANGED_MIND"));
+
+        assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(order.getEvents()).hasSize(1).first().isInstanceOf(OrderCancelled.class);
+        var event = (OrderCancelled) order.getEvents().get(0);
+        assertThat(event.previousStatus()).isEqualTo(OrderStatus.DRAFT);
+        assertThat(event.reason().code()).isEqualTo("CHANGED_MIND");
+    }
+
+    @Test
+    @DisplayName("cancel: PENDING_PAYMENT → CANCELLED, событие содержит previousStatus")
+    void cancel_fromPendingPayment_capturesPreviousStatus() {
+        var order = sampleOrder();
+        order.confirm();
+        order.clearDomainEvents();
+
+        order.cancel(CancellationReason.of("FOUND_BETTER_PRICE"));
+
+        assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
+        var event = (OrderCancelled) order.getEvents().get(0);
+        assertThat(event.previousStatus()).isEqualTo(OrderStatus.PENDING_PAYMENT);
+    }
+
+    @Test
+    @DisplayName("cancel: повторная отмена в CANCELLED — IllegalStateException")
+    void cancel_alreadyCancelled_throws() {
+        var order = sampleOrder();
+        order.cancel(CancellationReason.of("CHANGED_MIND"));
+
+        assertThatThrownBy(() -> order.cancel(CancellationReason.of("OTHER")))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("DRAFT");
     }
 
     @Test

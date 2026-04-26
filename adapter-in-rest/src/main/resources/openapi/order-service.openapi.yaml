@@ -140,6 +140,43 @@ paths:
             application/problem+json:
               schema: { $ref: '#/components/schemas/ProblemDetails' }
 
+  /api/v1/orders/{id}/cancel:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+        description: Идентификатор заказа.
+    post:
+      tags: [orders]
+      operationId: cancelOrder
+      summary: Отменить заказ (только до оплаты)
+      description: |
+        Покупатель отменяет заказ. Допустимо только из статусов `DRAFT`
+        и `PENDING_PAYMENT`. Заказ переходит в `CANCELLED`, публикуется
+        `OrderCancelled` (Inventory освобождает резерв). См. UC-3.
+
+        Отмена после оплаты выполняется отдельным UC через refund-сагу.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CancelOrderRequest' }
+      responses:
+        '200':
+          description: Заказ отменён.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
 # =============================================================================
 # Components
 # =============================================================================
@@ -178,6 +215,22 @@ components:
           type: string
           maxLength: 64
           description: Опциональный промокод. Применение — отдельной командой ApplyPromo (UC расширим в следующих UC).
+
+    CancelOrderRequest:
+      type: object
+      required: [reasonCode]
+      properties:
+        reasonCode:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: |
+            Код причины отмены. Свободный enum-like, используется аналитикой:
+            `CHANGED_MIND`, `FOUND_BETTER_PRICE`, `DELIVERY_TOO_LONG`, etc.
+        comment:
+          type: string
+          maxLength: 500
+          description: Опциональный свободный текст пользователя.
 
     CreateOrderItem:
       type: object

@@ -2,9 +2,11 @@ package ru.vikulinva.orderservice.domain.aggregate;
 
 import ru.vikulinva.ddd.AggregateRoot;
 import ru.vikulinva.orderservice.domain.entity.OrderItem;
+import ru.vikulinva.orderservice.domain.event.OrderCancelled;
 import ru.vikulinva.orderservice.domain.event.OrderConfirmed;
 import ru.vikulinva.orderservice.domain.event.OrderCreated;
 import ru.vikulinva.orderservice.domain.valueobject.Address;
+import ru.vikulinva.orderservice.domain.valueobject.CancellationReason;
 import ru.vikulinva.orderservice.domain.valueobject.CustomerId;
 import ru.vikulinva.orderservice.domain.valueobject.Discount;
 import ru.vikulinva.orderservice.domain.valueobject.Money;
@@ -183,6 +185,24 @@ public final class Order extends AggregateRoot<OrderId> {
 
     /** BR-013: минимальная сумма заказа для confirm. */
     private static final java.math.BigDecimal MIN_CONFIRM_AMOUNT_RUB = new java.math.BigDecimal("100.00");
+
+    /**
+     * Отмена заказа. Допустимые исходные статусы — {@code DRAFT} и {@code PENDING_PAYMENT}
+     * (отмена до оплаты). Регистрирует {@link OrderCancelled}.
+     *
+     * <p>Отмена из {@code PAID} требует refund-саги (отдельный UC, см. UC-3.2) —
+     * здесь не поддерживается.
+     */
+    public void cancel(CancellationReason reason) {
+        Objects.requireNonNull(reason, "reason");
+        if (status != OrderStatus.DRAFT && status != OrderStatus.PENDING_PAYMENT) {
+            throw new IllegalStateException(
+                "Order can only be cancelled from DRAFT or PENDING_PAYMENT, current: " + status);
+        }
+        OrderStatus previous = this.status;
+        this.status = OrderStatus.CANCELLED;
+        registerEvent(new OrderCancelled(id, customerId, sellerId, previous, reason));
+    }
 
     /**
      * BR-001: сумма заказа = сумма позиций − скидка + доставка.
