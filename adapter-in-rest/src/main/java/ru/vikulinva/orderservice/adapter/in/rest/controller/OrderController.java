@@ -18,6 +18,7 @@ import ru.vikulinva.orderservice.domain.valueobject.OrderId;
 import ru.vikulinva.orderservice.usecase.command.CancelOrderUseCase;
 import ru.vikulinva.orderservice.usecase.command.ConfirmOrderUseCase;
 import ru.vikulinva.orderservice.usecase.command.CreateOrderUseCase;
+import ru.vikulinva.orderservice.usecase.query.GetOrderByIdQuery;
 import ru.vikulinva.usecase.UseCaseDispatcher;
 
 import java.net.URI;
@@ -83,8 +84,10 @@ public class OrderController implements OrdersApi {
     }
 
     @Override
+    @PreAuthorize("hasRole('customer') or hasRole('admin')")
     public ResponseEntity<Order> getOrderById(java.util.UUID id) {
-        // Реализуется в UC-5/6 (GetOrderByIdQuery). Сейчас не имплементирован — возвращаем 501.
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        var customerId = authenticatedCustomer.currentCustomerId();
+        var order = useCaseDispatcher.dispatch(new GetOrderByIdQuery(OrderId.of(id), customerId));
+        return ResponseEntity.ok(mapper.toRest(order));
     }
 }
