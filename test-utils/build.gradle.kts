@@ -4,7 +4,9 @@ plugins {
 
 dependencies {
     api(project(":core"))
+    api(project(":adapter-out-postgres"))
 
+    api(libs.jooq)
     api(libs.spring.boot.starter.test)
     api(libs.spring.boot.testcontainers)
     api(libs.testcontainers.postgres)

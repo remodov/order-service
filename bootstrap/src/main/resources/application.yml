@@ -1,6 +1,12 @@
 spring:
   application:
     name: order-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # На local dev укажите Keycloak / dev-IdP. На prod — через env.
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8081/realms/marketplace/protocol/openid-connect/certs}
   datasource:
     url: jdbc:postgresql://localhost:5432/orders
     username: orders

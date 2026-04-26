@@ -10,6 +10,7 @@ import ru.vikulinva.orderservice.adapter.in.rest.generated.model.CreateOrderRequ
 import ru.vikulinva.orderservice.adapter.in.rest.generated.model.Order;
 import ru.vikulinva.orderservice.adapter.in.rest.mapper.OrderRestMapper;
 import ru.vikulinva.orderservice.adapter.in.rest.mapper.RequestHashCalculator;
+import org.springframework.security.access.prepost.PreAuthorize;
 import ru.vikulinva.orderservice.adapter.in.rest.security.AuthenticatedCustomer;
 import ru.vikulinva.orderservice.usecase.command.CreateOrderUseCase;
 import ru.vikulinva.usecase.UseCaseDispatcher;
@@ -42,6 +43,7 @@ public class OrderController implements OrdersApi {
     }
 
     @Override
+    @PreAuthorize("hasRole('customer') or hasRole('admin')")
     public ResponseEntity<Order> createOrder(UUID idempotencyKey, CreateOrderRequest request) {
         var customerId = authenticatedCustomer.currentCustomerId();
         var requestHash = requestHashCalculator.hash(request);

@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
  */
 @Component
 @InboundPort
-public final class CreateOrderUseCaseHandler implements UseCaseHandler<CreateOrderUseCase, Order> {
+public class CreateOrderUseCaseHandler implements UseCaseHandler<CreateOrderUseCase, Order> {
 
     private static final Money ZERO_SHIPPING = Money.zero(Money.RUB);
 

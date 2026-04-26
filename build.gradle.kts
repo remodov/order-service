@@ -29,6 +29,18 @@ subprojects {
             showStackTraces = true
             showCauses = true
         }
+        // Передаём Docker-сокет в форкнутый JVM (Testcontainers на macOS с
+        // Docker Desktop часто не находит сокет автоматически). Можно
+        // переопределить через -PdockerHost=... в gradle.properties.
+        val explicitHost = (findProperty("dockerHost") as String?) ?: System.getenv("DOCKER_HOST")
+        val resolvedHost = explicitHost ?: listOf(
+            "${System.getProperty("user.home")}/.docker/run/docker.sock",
+            "/var/run/docker.sock"
+        ).firstOrNull { file(it).exists() }?.let { "unix://$it" }
+        resolvedHost?.let { host ->
+            environment("DOCKER_HOST", host)
+            systemProperty("docker.host", host)
+        }
     }
 
     repositories {
