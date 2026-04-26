@@ -19,6 +19,7 @@ import ru.vikulinva.orderservice.usecase.command.CancelOrderUseCase;
 import ru.vikulinva.orderservice.usecase.command.ConfirmOrderUseCase;
 import ru.vikulinva.orderservice.usecase.command.CreateOrderUseCase;
 import ru.vikulinva.orderservice.usecase.query.GetOrderByIdQuery;
+import ru.vikulinva.orderservice.usecase.query.ListMyOrdersQuery;
 import ru.vikulinva.usecase.UseCaseDispatcher;
 
 import java.net.URI;
@@ -81,6 +82,19 @@ public class OrderController implements OrdersApi {
         var useCase = new CancelOrderUseCase(OrderId.of(id), customerId, reason);
         var order = useCaseDispatcher.dispatch(useCase);
         return ResponseEntity.ok(mapper.toRest(order));
+    }
+
+    @Override
+    @PreAuthorize("hasRole('customer') or hasRole('admin')")
+    public ResponseEntity<ru.vikulinva.orderservice.adapter.in.rest.generated.model.OrderSummaryPage> listMyOrders(
+        String status, Integer page, Integer size) {
+        var customerId = authenticatedCustomer.currentCustomerId();
+        var statusFilter = status == null
+            ? null
+            : ru.vikulinva.orderservice.domain.valueobject.OrderStatus.valueOf(status);
+        var query = new ListMyOrdersQuery(customerId, statusFilter, page, size);
+        var pageResult = useCaseDispatcher.dispatch(query);
+        return ResponseEntity.ok(mapper.toRest(pageResult));
     }
 
     @Override

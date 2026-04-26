@@ -103,6 +103,36 @@ public interface OrderRestMapper {
         return dto;
     }
 
+    default ru.vikulinva.orderservice.adapter.in.rest.generated.model.OrderSummary toRest(
+        ru.vikulinva.orderservice.usecase.query.dto.OrderSummary summary) {
+        var dto = new ru.vikulinva.orderservice.adapter.in.rest.generated.model.OrderSummary();
+        dto.setId(summary.id().value());
+        dto.setCustomerId(summary.customerId().value());
+        dto.setSellerId(summary.sellerId().value());
+        dto.setStatus(toSummaryStatus(summary.status()));
+        dto.setCurrency(summary.total().currency().getCurrencyCode());
+        dto.setTotalAmount(monetaryToString(summary.total()));
+        dto.setItemsCount(summary.itemsCount());
+        dto.setCreatedAt(toOffset(summary.createdAt()));
+        return dto;
+    }
+
+    default ru.vikulinva.orderservice.adapter.in.rest.generated.model.OrderSummaryPage toRest(
+        ru.vikulinva.orderservice.usecase.query.dto.PageResult<ru.vikulinva.orderservice.usecase.query.dto.OrderSummary> page) {
+        var dto = new ru.vikulinva.orderservice.adapter.in.rest.generated.model.OrderSummaryPage();
+        dto.setItems(page.items().stream().map(this::toRest).toList());
+        dto.setTotal(page.total());
+        dto.setPage(page.page());
+        dto.setSize(page.size());
+        dto.setHasNext(page.hasNext());
+        return dto;
+    }
+
+    default ru.vikulinva.orderservice.adapter.in.rest.generated.model.OrderSummary.StatusEnum toSummaryStatus(
+        ru.vikulinva.orderservice.domain.valueobject.OrderStatus status) {
+        return ru.vikulinva.orderservice.adapter.in.rest.generated.model.OrderSummary.StatusEnum.valueOf(status.name());
+    }
+
     @Named("monetaryToString")
     default String monetaryToString(Money money) {
         BigDecimal amount = money.amount();
