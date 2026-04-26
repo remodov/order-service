@@ -3,6 +3,7 @@ package ru.vikulinva.orderservice.domain.aggregate;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import ru.vikulinva.orderservice.domain.entity.OrderItem;
+import ru.vikulinva.orderservice.domain.event.OrderConfirmed;
 import ru.vikulinva.orderservice.domain.event.OrderCreated;
 import ru.vikulinva.orderservice.domain.valueobject.Address;
 import ru.vikulinva.orderservice.domain.valueobject.CustomerId;
@@ -87,6 +88,45 @@ class OrderTest {
             Money.zero(Money.RUB), ADDRESS, Instant.now()))
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("at least one item");
+    }
+
+    @Test
+    @DisplayName("confirm: DRAFT → PENDING_PAYMENT и регистрирует OrderConfirmed")
+    void confirm_movesDraftToPendingPaymentAndEmitsEvent() {
+        var order = sampleOrder();
+        order.clearDomainEvents();
+
+        order.confirm();
+
+        assertThat(order.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
+        assertThat(order.getEvents()).hasSize(1).first().isInstanceOf(OrderConfirmed.class);
+        var event = (OrderConfirmed) order.getEvents().get(0);
+        assertThat(event.total()).isEqualTo(order.total());
+    }
+
+    @Test
+    @DisplayName("confirm: повторный вызов в PENDING_PAYMENT — IllegalStateException")
+    void confirm_fromNonDraft_throws() {
+        var order = sampleOrder();
+        order.confirm();
+
+        assertThatThrownBy(order::confirm)
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("DRAFT");
+    }
+
+    @Test
+    @DisplayName("BR-013: confirm с суммой ниже 100 RUB отклоняется")
+    void confirm_belowMinimum_throws() {
+        var seller = SellerId.of(UUID.randomUUID());
+        var order = Order.create(OrderId.of(UUID.randomUUID()),
+            CustomerId.of(UUID.randomUUID()),
+            List.of(item(seller, "50.00")),
+            Money.zero(Money.RUB), ADDRESS, Instant.now());
+
+        assertThatThrownBy(order::confirm)
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("BR-013");
     }
 
     @Test

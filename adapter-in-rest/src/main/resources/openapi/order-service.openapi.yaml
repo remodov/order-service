@@ -101,6 +101,45 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /api/v1/orders/{id}/confirm:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+        description: Идентификатор заказа.
+    post:
+      tags: [orders]
+      operationId: confirmOrder
+      summary: Подтвердить заказ (DRAFT → PENDING_PAYMENT)
+      description: |
+        Покупатель подтверждает заказ из черновика. Заказ переходит в
+        `PENDING_PAYMENT`, публикуется `OrderConfirmed` (Inventory резервирует
+        остаток). См. §7 Commands и §4 жизненный цикл.
+
+        Требует `BR-013` (минимальная сумма 100 ₽) и `BR-002` (≥ 1 позиция).
+        Проверяется ABAC: только владелец заказа или admin.
+      responses:
+        '200':
+          description: Заказ подтверждён.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          description: |
+            Бизнес-инвариант не выполнен (`ORDER_BELOW_MINIMUM`, `EMPTY_ORDER`).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/ProblemDetails' }
+
 # =============================================================================
 # Components
 # =============================================================================

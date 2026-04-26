@@ -12,6 +12,8 @@ import ru.vikulinva.orderservice.adapter.in.rest.mapper.OrderRestMapper;
 import ru.vikulinva.orderservice.adapter.in.rest.mapper.RequestHashCalculator;
 import org.springframework.security.access.prepost.PreAuthorize;
 import ru.vikulinva.orderservice.adapter.in.rest.security.AuthenticatedCustomer;
+import ru.vikulinva.orderservice.domain.valueobject.OrderId;
+import ru.vikulinva.orderservice.usecase.command.ConfirmOrderUseCase;
 import ru.vikulinva.orderservice.usecase.command.CreateOrderUseCase;
 import ru.vikulinva.usecase.UseCaseDispatcher;
 
@@ -56,6 +58,15 @@ public class OrderController implements OrdersApi {
             .status(HttpStatus.CREATED)
             .header(HttpHeaders.LOCATION, "/api/v1/orders/" + body.getId())
             .body(body);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('customer') or hasRole('admin')")
+    public ResponseEntity<Order> confirmOrder(UUID id) {
+        var customerId = authenticatedCustomer.currentCustomerId();
+        var useCase = new ConfirmOrderUseCase(OrderId.of(id), customerId);
+        var order = useCaseDispatcher.dispatch(useCase);
+        return ResponseEntity.ok(mapper.toRest(order));
     }
 
     @Override
