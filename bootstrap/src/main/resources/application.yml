@@ -1,0 +1,88 @@
+spring:
+  application:
+    name: order-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orders
+    username: orders
+    password: orders
+    hikari:
+      maximum-pool-size: 20
+  jooq:
+    sql-dialect: postgres
+  liquibase:
+    change-log: classpath:db/changelog-master.yaml
+    contexts: production
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      group-id: order-service
+      auto-offset-reset: earliest
+  cache:
+    type: simple
+
+server:
+  port: 8080
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    tags:
+      application: order-service
+
+resilience4j:
+  retry:
+    instances:
+      catalog:
+        max-attempts: 2
+        wait-duration: 50ms
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+      payment:
+        max-attempts: 3
+        wait-duration: 100ms
+  circuitbreaker:
+    instances:
+      catalog:
+        sliding-window-size: 30
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 60s
+      payment:
+        sliding-window-size: 30
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 60s
+  timelimiter:
+    instances:
+      catalog:
+        timeout-duration: 1s
+      payment:
+        timeout-duration: 3s
+
+clients:
+  catalog:
+    base-url: http://localhost:9001
+  payment:
+    base-url: http://localhost:9002
+
+order-service:
+  outbox:
+    relay-fixed-delay: 1000   # ms — Outbox-relay polls outbox table
+  expire-unpaid:
+    fixed-delay: 60000        # ms — checks for PENDING_PAYMENT > 15 min
+    timeout-minutes: 15
+  close-delivered:
+    cron: "0 0 4 * * *"       # daily 04:00
+    window-days: 14
+
+logging:
+  level:
+    ru.vikulinva.orderservice: DEBUG
