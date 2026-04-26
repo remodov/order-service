@@ -79,9 +79,14 @@ clients:
   payment:
     base-url: http://localhost:9002
 
+orderservice:
+  outbox:
+    poll-interval-ms: 1000   # how often Outbox-relay scans pending events
+    batch-size: 100          # max events per tick
+
 order-service:
   outbox:
-    relay-fixed-delay: 1000   # ms — Outbox-relay polls outbox table
+    relay-fixed-delay: 1000   # ms — Outbox-relay polls outbox table (legacy key, replaced by orderservice.outbox.*)
   expire-unpaid:
     fixed-delay: 60000        # ms — checks for PENDING_PAYMENT > 15 min
     timeout-minutes: 15
