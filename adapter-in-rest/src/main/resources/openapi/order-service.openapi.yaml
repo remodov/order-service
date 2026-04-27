@@ -107,6 +107,40 @@ paths:
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
 
+  /api/v1/seller/orders:
+    get:
+      tags: [orders]
+      operationId: listSellerOrders
+      summary: Список заказов продавца
+      description: |
+        Возвращает страницу заказов, в которых продавец — текущий пользователь.
+        Сортировка по `createdAt DESC`. Доступно только роли `seller`/`admin`.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [DRAFT, PENDING_PAYMENT, PAID, SHIPPED, DELIVERED, COMPLETED, EXPIRED, CANCELLED, DISPUTE, REFUNDED]
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: size
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          description: Страница заказов продавца.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OrderSummaryPage' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /api/v1/orders/{id}:
     parameters:
       - name: id
@@ -267,6 +301,74 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
+  /api/v1/orders/{id}/dispute:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [orders]
+      operationId: openDispute
+      summary: Открыть спор по доставленному заказу (покупатель)
+      description: |
+        Перевод `DELIVERED → DISPUTE`. Покупатель указывает причину;
+        оператор поддержки увидит спор в своём очереди и закроет его
+        через `resolveDispute`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OpenDisputeRequest' }
+      responses:
+        '200':
+          description: Спор открыт.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/orders/{id}/dispute/resolve:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [orders]
+      operationId: resolveDispute
+      summary: Закрыть спор (оператор)
+      description: |
+        Перевод `DISPUTE → COMPLETED` (отклонить) либо `DISPUTE → REFUNDED`
+        (удовлетворить). При `REFUNDED` подписчик `DisputeResolved`
+        запускает refund-сагу через Payment.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ResolveDisputeRequest' }
+      responses:
+        '200':
+          description: Спор закрыт.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
   /api/v1/orders/{id}/cancel:
     parameters:
       - name: id
@@ -342,6 +444,28 @@ components:
           type: string
           maxLength: 64
           description: Опциональный промокод. Применение — отдельной командой ApplyPromo (UC расширим в следующих UC).
+
+    OpenDisputeRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason: { type: string, minLength: 1, maxLength: 500 }
+
+    ResolveDisputeRequest:
+      type: object
+      required: [decision, note]
+      properties:
+        decision:
+          type: string
+          enum: [COMPLETED, REFUNDED]
+          description: |
+            `COMPLETED` — спор отклонён, заказ финализируется в пользу продавца.
+            `REFUNDED` — спор удовлетворён, инициируется refund.
+        note:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: Пояснение оператора, попадает в DisputeResolved.
 
     PayOrderRequest:
       type: object

@@ -7,6 +7,7 @@ include(
     "adapter-out-postgres",
     "adapter-out-payment",
     "adapter-out-catalog",
+    "adapter-out-kafka",
     "bootstrap",
     "test-utils"
 )

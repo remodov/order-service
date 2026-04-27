@@ -2,6 +2,8 @@ package ru.vikulinva.orderservice.domain.aggregate;
 
 import ru.vikulinva.ddd.AggregateRoot;
 import ru.vikulinva.orderservice.domain.entity.OrderItem;
+import ru.vikulinva.orderservice.domain.event.DisputeOpened;
+import ru.vikulinva.orderservice.domain.event.DisputeResolved;
 import ru.vikulinva.orderservice.domain.event.OrderCancelled;
 import ru.vikulinva.orderservice.domain.event.OrderCompleted;
 import ru.vikulinva.orderservice.domain.event.OrderConfirmed;
@@ -309,6 +311,46 @@ public final class Order extends AggregateRoot<OrderId> {
         this.status = OrderStatus.COMPLETED;
         this.closedAt = closedAt;
         registerEvent(new OrderCompleted(id, customerId, sellerId, closedAt));
+    }
+
+    /**
+     * Покупатель открывает спор по полученному заказу: {@code DELIVERED → DISPUTE}.
+     * Регистрирует {@link DisputeOpened}.
+     */
+    public void openDispute(String reason, Instant openedAt) {
+        Objects.requireNonNull(reason, "reason");
+        Objects.requireNonNull(openedAt, "openedAt");
+        if (reason.isBlank()) {
+            throw new IllegalArgumentException("dispute reason must not be blank");
+        }
+        if (status != OrderStatus.DELIVERED) {
+            throw new IllegalStateException(
+                "Dispute can only be opened from DELIVERED, current: " + status);
+        }
+        this.status = OrderStatus.DISPUTE;
+        registerEvent(new DisputeOpened(id, customerId, sellerId, reason, openedAt));
+    }
+
+    /**
+     * Оператор закрывает спор: {@code DISPUTE → COMPLETED} (отклонён) либо
+     * {@code DISPUTE → REFUNDED} (удовлетворён). При REFUNDED refund-саге
+     * слушает подписчик через {@link DisputeResolved}.
+     */
+    public void resolveDispute(OrderStatus finalStatus, String resolutionNote, Instant resolvedAt) {
+        Objects.requireNonNull(finalStatus, "finalStatus");
+        Objects.requireNonNull(resolutionNote, "resolutionNote");
+        Objects.requireNonNull(resolvedAt, "resolvedAt");
+        if (status != OrderStatus.DISPUTE) {
+            throw new IllegalStateException(
+                "Dispute can only be resolved from DISPUTE, current: " + status);
+        }
+        if (finalStatus != OrderStatus.COMPLETED && finalStatus != OrderStatus.REFUNDED) {
+            throw new IllegalArgumentException(
+                "Dispute resolution must end in COMPLETED or REFUNDED, got: " + finalStatus);
+        }
+        this.status = finalStatus;
+        this.closedAt = resolvedAt;
+        registerEvent(new DisputeResolved(id, customerId, sellerId, finalStatus, resolutionNote, resolvedAt));
     }
 
     /**

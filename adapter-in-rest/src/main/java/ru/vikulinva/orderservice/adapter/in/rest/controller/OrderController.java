@@ -9,7 +9,9 @@ import ru.vikulinva.orderservice.adapter.in.rest.generated.api.OrdersApi;
 import ru.vikulinva.orderservice.adapter.in.rest.generated.model.CancelOrderRequest;
 import ru.vikulinva.orderservice.adapter.in.rest.generated.model.CreateOrderRequest;
 import ru.vikulinva.orderservice.adapter.in.rest.generated.model.Order;
+import ru.vikulinva.orderservice.adapter.in.rest.generated.model.OpenDisputeRequest;
 import ru.vikulinva.orderservice.adapter.in.rest.generated.model.PayOrderRequest;
+import ru.vikulinva.orderservice.adapter.in.rest.generated.model.ResolveDisputeRequest;
 import ru.vikulinva.orderservice.adapter.in.rest.generated.model.ShipOrderRequest;
 import ru.vikulinva.orderservice.adapter.in.rest.security.AuthenticatedSeller;
 import ru.vikulinva.orderservice.adapter.in.rest.mapper.OrderRestMapper;
@@ -23,9 +25,12 @@ import ru.vikulinva.orderservice.usecase.command.ConfirmDeliveryUseCase;
 import ru.vikulinva.orderservice.usecase.command.ConfirmOrderUseCase;
 import ru.vikulinva.orderservice.usecase.command.CreateOrderUseCase;
 import ru.vikulinva.orderservice.usecase.command.MarkShippedUseCase;
+import ru.vikulinva.orderservice.usecase.command.OpenDisputeUseCase;
 import ru.vikulinva.orderservice.usecase.command.PayOrderUseCase;
+import ru.vikulinva.orderservice.usecase.command.ResolveDisputeUseCase;
 import ru.vikulinva.orderservice.usecase.query.GetOrderByIdQuery;
 import ru.vikulinva.orderservice.usecase.query.ListMyOrdersQuery;
+import ru.vikulinva.orderservice.usecase.query.ListSellerOrdersQuery;
 import ru.vikulinva.usecase.UseCaseDispatcher;
 
 import java.net.URI;
@@ -94,6 +99,19 @@ public class OrderController implements OrdersApi {
     }
 
     @Override
+    @PreAuthorize("hasRole('seller') or hasRole('admin')")
+    public ResponseEntity<ru.vikulinva.orderservice.adapter.in.rest.generated.model.OrderSummaryPage> listSellerOrders(
+        String status, Integer page, Integer size) {
+        var sellerId = authenticatedSeller.currentSellerId();
+        var statusFilter = status == null
+            ? null
+            : ru.vikulinva.orderservice.domain.valueobject.OrderStatus.valueOf(status);
+        var query = new ListSellerOrdersQuery(sellerId, statusFilter, page, size);
+        var pageResult = useCaseDispatcher.dispatch(query);
+        return ResponseEntity.ok(mapper.toRest(pageResult));
+    }
+
+    @Override
     @PreAuthorize("hasRole('customer') or hasRole('admin')")
     public ResponseEntity<ru.vikulinva.orderservice.adapter.in.rest.generated.model.OrderSummaryPage> listMyOrders(
         String status, Integer page, Integer size) {
@@ -127,6 +145,24 @@ public class OrderController implements OrdersApi {
     public ResponseEntity<Order> deliverOrder(UUID id) {
         var customerId = authenticatedCustomer.currentCustomerId();
         var useCase = new ConfirmDeliveryUseCase(OrderId.of(id), customerId);
+        var order = useCaseDispatcher.dispatch(useCase);
+        return ResponseEntity.ok(mapper.toRest(order));
+    }
+
+    @Override
+    @PreAuthorize("hasRole('customer') or hasRole('admin')")
+    public ResponseEntity<Order> openDispute(UUID id, OpenDisputeRequest request) {
+        var customerId = authenticatedCustomer.currentCustomerId();
+        var useCase = new OpenDisputeUseCase(OrderId.of(id), customerId, request.getReason());
+        var order = useCaseDispatcher.dispatch(useCase);
+        return ResponseEntity.ok(mapper.toRest(order));
+    }
+
+    @Override
+    @PreAuthorize("hasRole('dispute-operator') or hasRole('admin')")
+    public ResponseEntity<Order> resolveDispute(UUID id, ResolveDisputeRequest request) {
+        var finalStatus = ru.vikulinva.orderservice.domain.valueobject.OrderStatus.valueOf(request.getDecision().getValue());
+        var useCase = new ResolveDisputeUseCase(OrderId.of(id), finalStatus, request.getNote());
         var order = useCaseDispatcher.dispatch(useCase);
         return ResponseEntity.ok(mapper.toRest(order));
     }

@@ -53,6 +53,24 @@ public class JooqOrderQueryAdapter implements OrderQueryPort {
         if (status != null) {
             where = where.and(ORDERS.STATUS.eq(OrderStatus.valueOf(status.name())));
         }
+        return runListQuery(where, page, size);
+    }
+
+    @Override
+    public PageResult<OrderSummary> listBySeller(SellerId sellerId,
+                                                   ru.vikulinva.orderservice.domain.valueobject.OrderStatus status,
+                                                   int page,
+                                                   int size) {
+        Objects.requireNonNull(sellerId, "sellerId");
+
+        Condition where = ORDERS.SELLER_ID.eq(sellerId.value());
+        if (status != null) {
+            where = where.and(ORDERS.STATUS.eq(OrderStatus.valueOf(status.name())));
+        }
+        return runListQuery(where, page, size);
+    }
+
+    private PageResult<OrderSummary> runListQuery(Condition where, int page, int size) {
 
         long total = dsl.fetchCount(dsl.selectOne().from(ORDERS).where(where));
         if (total == 0) {

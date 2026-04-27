@@ -22,11 +22,11 @@ spring:
     bootstrap-servers: localhost:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
       acks: all
     consumer:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       group-id: order-service
       auto-offset-reset: earliest
   cache:
@@ -80,6 +80,10 @@ clients:
     base-url: http://localhost:9002
 
 orderservice:
+  kafka:
+    events-topic: marketplace.orders.v1   # outbox-relay publishes here
+    payment-topic: marketplace.payments.v1
+    inventory-topic: marketplace.inventory.v1
   outbox:
     poll-interval-ms: 1000        # how often Outbox-relay scans pending events
     batch-size: 100               # max events per tick

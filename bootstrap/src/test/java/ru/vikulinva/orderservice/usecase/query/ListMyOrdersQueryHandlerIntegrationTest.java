@@ -42,6 +42,47 @@ class ListMyOrdersQueryHandlerIntegrationTest extends PlatformBaseIntegrationTes
     }
 
     @Test
+    @DisplayName("ListSellerOrders: возвращает только заказы конкретного продавца")
+    void list_seller_filtersBySeller() {
+        var sellerA = SellerId.of(UUID.randomUUID());
+        var sellerB = SellerId.of(UUID.randomUUID());
+        createOrderForSeller(sellerA, "100.00", Instant.parse("2026-04-01T10:00:00Z"), 100);
+        createOrderForSeller(sellerA, "200.00", Instant.parse("2026-04-02T10:00:00Z"), 101);
+        createOrderForSeller(sellerB, "300.00", Instant.parse("2026-04-03T10:00:00Z"), 102);
+
+        var result = useCaseDispatcher.dispatch(
+            new ru.vikulinva.orderservice.usecase.query.ListSellerOrdersQuery(sellerA, null, 0, 20));
+
+        assertThat(result.total()).isEqualTo(2);
+        assertThat(result.items()).allMatch(s -> s.sellerId().equals(sellerA));
+    }
+
+    private void createOrderForSeller(SellerId sellerId, String price, Instant when, int idemSuffix) {
+        var customerId = CustomerId.of(UUID.randomUUID());
+        var productId = ProductId.of(UUID.randomUUID());
+        var orderUuid = UUID.randomUUID();
+        var orderItemUuid = UUID.randomUUID();
+
+        AtomicInteger uuidCallCount = new AtomicInteger();
+        given(uuidGenerator.generate()).willAnswer(inv ->
+            uuidCallCount.getAndIncrement() == 0 ? orderUuid : orderItemUuid);
+        given(dateTimeService.now()).willReturn(when);
+
+        catalog.stubFor(get(urlPathMatching("/api/v1/products/.*"))
+            .willReturn(okJson("""
+                { "id": "%s", "price": "%s", "currency": "RUB" }
+                """.formatted(productId.value(), price))));
+
+        useCaseDispatcher.dispatch(new CreateOrderUseCase(
+            customerId,
+            List.of(new CreateOrderUseCase.Item(productId, sellerId, Quantity.of(1))),
+            ADDRESS,
+            "idem-list-seller-" + idemSuffix,
+            "hash-list-seller-" + idemSuffix
+        ));
+    }
+
+    @Test
     @DisplayName("happy path: возвращает только заказы покупателя, отсортированные по createdAt DESC")
     void list_filtersAndSorts() {
         var customer = CustomerId.of(UUID.randomUUID());

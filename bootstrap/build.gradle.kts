@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":adapter-out-postgres"))
     implementation(project(":adapter-out-payment"))
     implementation(project(":adapter-out-catalog"))
+    implementation(project(":adapter-out-kafka"))
 
     implementation(libs.spring.boot.starter)
     implementation(libs.spring.boot.starter.actuator)
@@ -22,6 +23,7 @@ dependencies {
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.boot.testcontainers)
+    testImplementation(libs.spring.kafka)
     testImplementation(project(":test-utils"))
 }
 

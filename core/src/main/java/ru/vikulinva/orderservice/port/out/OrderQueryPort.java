@@ -4,6 +4,7 @@ import ru.vikulinva.hexagonal.OutboundPort;
 import ru.vikulinva.orderservice.domain.valueobject.CustomerId;
 import ru.vikulinva.orderservice.domain.valueobject.OrderId;
 import ru.vikulinva.orderservice.domain.valueobject.OrderStatus;
+import ru.vikulinva.orderservice.domain.valueobject.SellerId;
 import ru.vikulinva.orderservice.usecase.query.dto.OrderSummary;
 import ru.vikulinva.orderservice.usecase.query.dto.PageResult;
 
@@ -28,6 +29,12 @@ public interface OrderQueryPort {
                                               OrderStatus status,
                                               int page,
                                               int size);
+
+    /** То же, но с фильтром по продавцу — для seller-кабинета. */
+    PageResult<OrderSummary> listBySeller(SellerId sellerId,
+                                            OrderStatus status,
+                                            int page,
+                                            int size);
 
     /**
      * id заказов в статусе PENDING_PAYMENT с {@code created_at < threshold}.
