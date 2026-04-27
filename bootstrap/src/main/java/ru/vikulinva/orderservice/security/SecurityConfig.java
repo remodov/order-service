@@ -34,7 +34,7 @@ import java.util.Map;
  */
 @Configuration
 @EnableMethodSecurity
-@Profile("!integration-test")
+@Profile("!integration-test & !local")
 public class SecurityConfig {
 
     @Bean

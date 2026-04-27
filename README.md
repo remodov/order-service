@@ -91,7 +91,7 @@ docs/spec/
 ## Quickstart
 
 ```bash
-# 1. Postgres + WireMock-stubs (не нужны для unit-тестов)
+# 1. Postgres
 docker-compose up -d postgres
 
 # 2. Sanity build (без интеграционных тестов)
@@ -101,11 +101,19 @@ docker-compose up -d postgres
 ./gradlew test
 
 # 4. Локальный запуск
-./gradlew :bootstrap:bootRun
+./gradlew :bootstrap:bootRun --args='--spring.profiles.active=local'
 ```
 
 Сервис слушает `:8080`. Liquibase сам прогонит миграции из
 `migrations/db/changelog-master.yaml`.
+
+### Профили
+
+| Профиль | Когда применять | Что включает |
+|---|---|---|
+| `local` | Локальный dev без Keycloak/Catalog/Payment | Postgres из docker-compose, security permitAll, Kafka listeners off, OAuth2 Resource Server отключён |
+| `integration-test` | Только в `@SpringBootTest` | Postgres из docker-compose, WireMock-стабы для Catalog/Payment на фиксированных портах, schedulers заглушены, security permitAll |
+| (без профиля) | Production | Реальный IdP, Kafka, Catalog/Payment по `clients.*.base-url` |
 
 ## Структура модулей
 
