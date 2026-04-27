@@ -6,11 +6,13 @@ import ru.vikulinva.hexagonal.InboundPort;
 import ru.vikulinva.orderservice.domain.aggregate.Order;
 import ru.vikulinva.orderservice.domain.repository.OrderRepository;
 import ru.vikulinva.orderservice.domain.valueobject.OrderStatus;
+import ru.vikulinva.orderservice.port.out.PaymentPort;
 import ru.vikulinva.orderservice.usecase.command.exception.OrderInvalidStateException;
 import ru.vikulinva.orderservice.usecase.command.exception.OrderNotFoundException;
 import ru.vikulinva.usecase.UseCaseHandler;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Обработчик UC-3 «Отмена заказа».
@@ -29,9 +31,11 @@ import java.util.Objects;
 public class CancelOrderUseCaseHandler implements UseCaseHandler<CancelOrderUseCase, Order> {
 
     private final OrderRepository orderRepository;
+    private final PaymentPort paymentPort;
 
-    public CancelOrderUseCaseHandler(OrderRepository orderRepository) {
+    public CancelOrderUseCaseHandler(OrderRepository orderRepository, PaymentPort paymentPort) {
         this.orderRepository = Objects.requireNonNull(orderRepository, "orderRepository");
+        this.paymentPort = Objects.requireNonNull(paymentPort, "paymentPort");
     }
 
     @Override
@@ -45,7 +49,16 @@ public class CancelOrderUseCaseHandler implements UseCaseHandler<CancelOrderUseC
         }
 
         try {
-            order.cancel(useCase.reason());
+            if (order.status() == OrderStatus.PAID) {
+                UUID refundId = paymentPort.requestRefund(
+                    order.getId(),
+                    order.paymentId(),
+                    order.total(),
+                    "refund-" + order.getId().value());
+                order.cancelAfterPayment(useCase.reason(), refundId);
+            } else {
+                order.cancel(useCase.reason());
+            }
         } catch (IllegalStateException e) {
             throw new OrderInvalidStateException(order.status(), OrderStatus.PENDING_PAYMENT, "cancel");
         }

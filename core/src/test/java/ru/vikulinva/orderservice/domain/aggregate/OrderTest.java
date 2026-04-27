@@ -268,6 +268,32 @@ class OrderTest {
     }
 
     @Test
+    @DisplayName("cancelAfterPayment: PAID → CANCELLED, событие содержит refundId")
+    void cancelAfterPayment_emitsRefundId() {
+        var order = sampleOrder();
+        order.confirm();
+        order.markPaid(UUID.randomUUID(), Instant.parse("2026-04-02T12:00:00Z"));
+        order.clearDomainEvents();
+        var refundId = UUID.randomUUID();
+
+        order.cancelAfterPayment(CancellationReason.of("CHANGED_MIND"), refundId);
+
+        assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
+        var event = (OrderCancelled) order.getEvents().get(0);
+        assertThat(event.previousStatus()).isEqualTo(OrderStatus.PAID);
+        assertThat(event.refundId()).isEqualTo(refundId);
+    }
+
+    @Test
+    @DisplayName("cancelAfterPayment из DRAFT — IllegalStateException")
+    void cancelAfterPayment_fromDraft_throws() {
+        var order = sampleOrder();
+        assertThatThrownBy(() -> order.cancelAfterPayment(CancellationReason.of("X"), UUID.randomUUID()))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("PAID");
+    }
+
+    @Test
     @DisplayName("clearDomainEvents очищает зарегистрированные события")
     void clearDomainEvents_works() {
         var order = sampleOrder();

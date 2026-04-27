@@ -15,6 +15,7 @@ dependencies {
 
     implementation(libs.spring.boot.starter)
     implementation(libs.spring.boot.starter.actuator)
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.18.2")
     implementation(libs.spring.boot.starter.cache)
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.oauth2.resource.server)
@@ -24,6 +25,7 @@ dependencies {
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.boot.testcontainers)
     testImplementation(libs.spring.kafka)
+    testImplementation("org.springframework.security:spring-security-test:6.4.2")
     testImplementation(project(":test-utils"))
 }
 

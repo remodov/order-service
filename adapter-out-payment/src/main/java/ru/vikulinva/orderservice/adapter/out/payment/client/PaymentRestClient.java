@@ -8,6 +8,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import ru.vikulinva.hexagonal.OutboundAdapter;
@@ -54,11 +55,20 @@ public class PaymentRestClient implements PaymentPort {
             amount.currency().getCurrencyCode(),
             idempotencyKey);
 
-        ResponseEntity<RefundResponse> response = restTemplate.exchange(
-            "/api/v1/refunds",
-            org.springframework.http.HttpMethod.POST,
-            new HttpEntity<>(body, headers),
-            RefundResponse.class);
+        ResponseEntity<RefundResponse> response;
+        try {
+            response = restTemplate.exchange(
+                "/api/v1/refunds",
+                org.springframework.http.HttpMethod.POST,
+                new HttpEntity<>(body, headers),
+                RefundResponse.class);
+        } catch (HttpServerErrorException hsee) {
+            // 5xx — Payment временно недоступен; сразу мапим в доменное исключение,
+            // чтобы вызывающий код мог откатить транзакцию и не дёргать дальше.
+            throw new PaymentUnavailableException(hsee);
+        } catch (ResourceAccessException raex) {
+            throw new PaymentUnavailableException(raex);
+        }
 
         RefundResponse refund = response.getBody();
         if (refund == null || refund.refundId() == null) {
@@ -67,11 +77,11 @@ public class PaymentRestClient implements PaymentPort {
         return refund.refundId();
     }
 
-    /** Fallback при открытом circuit breaker / отказе сетевого вызова. */
+    /** Fallback при открытом circuit breaker. */
     @SuppressWarnings("unused")
     private UUID fallback(OrderId orderId, UUID paymentId, Money amount, String idempotencyKey, Throwable t) {
-        if (t instanceof ResourceAccessException raex) {
-            throw new PaymentUnavailableException(raex);
+        if (t instanceof PaymentUnavailableException pue) {
+            throw pue;
         }
         throw new PaymentUnavailableException(t);
     }

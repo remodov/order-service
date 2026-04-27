@@ -38,10 +38,16 @@ public abstract class PlatformBaseIntegrationTest {
 
     /** Фиксированный порт WireMock — упрощает {@code @DynamicPropertySource}. */
     private static final int CATALOG_WIREMOCK_PORT = 18089;
+    private static final int PAYMENT_WIREMOCK_PORT = 18090;
 
     @RegisterExtension
     protected static final WireMockExtension catalog = WireMockExtension.newInstance()
         .options(wireMockConfig().port(CATALOG_WIREMOCK_PORT))
+        .build();
+
+    @RegisterExtension
+    protected static final WireMockExtension payment = WireMockExtension.newInstance()
+        .options(wireMockConfig().port(PAYMENT_WIREMOCK_PORT))
         .build();
 
     @MockitoBean
@@ -60,6 +66,6 @@ public abstract class PlatformBaseIntegrationTest {
         registry.add("spring.datasource.username", () -> "orders");
         registry.add("spring.datasource.password", () -> "orders");
         registry.add("clients.catalog.base-url", () -> "http://localhost:" + CATALOG_WIREMOCK_PORT);
-        registry.add("clients.payment.base-url", () -> "http://localhost:9");
+        registry.add("clients.payment.base-url", () -> "http://localhost:" + PAYMENT_WIREMOCK_PORT);
     }
 }

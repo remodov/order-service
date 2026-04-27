@@ -56,6 +56,9 @@ resilience4j:
       payment:
         max-attempts: 3
         wait-duration: 100ms
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpServerErrorException
   circuitbreaker:
     instances:
       catalog:

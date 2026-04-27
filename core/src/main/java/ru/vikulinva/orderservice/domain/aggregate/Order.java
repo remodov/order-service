@@ -217,11 +217,11 @@ public final class Order extends AggregateRoot<OrderId> {
     private static final java.math.BigDecimal MIN_CONFIRM_AMOUNT_RUB = new java.math.BigDecimal("100.00");
 
     /**
-     * Отмена заказа. Допустимые исходные статусы — {@code DRAFT} и {@code PENDING_PAYMENT}
-     * (отмена до оплаты). Регистрирует {@link OrderCancelled}.
+     * Отмена заказа до оплаты. Допустимые исходные статусы — {@code DRAFT}
+     * и {@code PENDING_PAYMENT}. Возврат не требуется. Регистрирует
+     * {@link OrderCancelled} (с {@code refundId == null}).
      *
-     * <p>Отмена из {@code PAID} требует refund-саги (отдельный UC, см. UC-3.2) —
-     * здесь не поддерживается.
+     * <p>Отмена из {@code PAID} — отдельный метод {@link #cancelAfterPayment}.
      */
     public void cancel(CancellationReason reason) {
         Objects.requireNonNull(reason, "reason");
@@ -232,6 +232,23 @@ public final class Order extends AggregateRoot<OrderId> {
         OrderStatus previous = this.status;
         this.status = OrderStatus.CANCELLED;
         registerEvent(new OrderCancelled(id, customerId, sellerId, previous, reason));
+    }
+
+    /**
+     * Отмена заказа после оплаты с инициированным возвратом. Доступно только
+     * из статуса {@code PAID} (для SHIPPED/DELIVERED — спор, не отмена).
+     * Регистрирует {@link OrderCancelled} с указанным {@code refundId}.
+     */
+    public void cancelAfterPayment(CancellationReason reason, UUID refundId) {
+        Objects.requireNonNull(reason, "reason");
+        Objects.requireNonNull(refundId, "refundId");
+        if (status != OrderStatus.PAID) {
+            throw new IllegalStateException(
+                "cancelAfterPayment requires PAID status, current: " + status);
+        }
+        OrderStatus previous = this.status;
+        this.status = OrderStatus.CANCELLED;
+        registerEvent(new OrderCancelled(id, customerId, sellerId, previous, reason, refundId));
     }
 
     /**
