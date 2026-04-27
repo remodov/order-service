@@ -88,6 +88,54 @@ docs/spec/
   - [`ddd-building-blocks`](https://github.com/remodov/ddd-building-blocks) (Entity, AggregateRoot, ValueObject, DomainEvent)
 - Скиллы AI-агента: [`usecase-pattern-skills`](https://github.com/remodov/usecase-pattern-skills)
 
+## Quickstart
+
+```bash
+# 1. Postgres + WireMock-stubs (не нужны для unit-тестов)
+docker-compose up -d postgres
+
+# 2. Sanity build (без интеграционных тестов)
+./gradlew build -x test
+
+# 3. Все тесты (нужен Postgres)
+./gradlew test
+
+# 4. Локальный запуск
+./gradlew :bootstrap:bootRun
+```
+
+Сервис слушает `:8080`. Liquibase сам прогонит миграции из
+`migrations/db/changelog-master.yaml`.
+
+## Структура модулей
+
+| Модуль | Назначение |
+|---|---|
+| `core/` | Домен + UseCase/Handler + порты (без Spring и фреймворков, кроме transaction-аннотаций и Spring stereotype) |
+| `adapter-in-rest/` | OpenAPI-сгенерированный REST-контроллер, MapStruct-мапперы, JWT-secured |
+| `adapter-in-kafka/` | Kafka-консьюмеры (skeleton) |
+| `adapter-out-postgres/` | jOOQ-репозитории, Outbox-publisher, Outbox-relay |
+| `adapter-out-catalog/` | REST-клиент Catalog Service (Resilience4j) |
+| `adapter-out-payment/` | REST-клиент Payment Service для refund-саги (Resilience4j) |
+| `bootstrap/` | Spring Boot main, security, schedulers, конфигурация |
+| `test-utils/` | Базовые классы интеграционных тестов, ObjectGenerator, DatabasePreparer |
+| `migrations/` | Liquibase YAML-миграции (структура как в bus-tickets) |
+
+## Покрытие use-case'ов
+
+Реализованы и покрыты тестами (unit + integration):
+
+- **UC-1** CreateOrder — `DRAFT`, ABAC, BR-014 single-seller, BR-010 idempotency
+- **UC-2** ConfirmOrder — `DRAFT → PENDING_PAYMENT`, BR-013 минимум 100 ₽
+- **UC-3** CancelOrder — `DRAFT/PENDING_PAYMENT → CANCELLED` (refund-сага из `PAID` будет отдельно)
+- **UC-4** GetOrderByIdQuery — read с ABAC
+- **UC-5** ListMyOrdersQuery — пагинация + фильтр по статусу
+- **UC-6** PayOrder — webhook от Payment, идемпотентен по `paymentId`
+- **UC-7** MarkShipped — продавец, `PAID → SHIPPED`
+- **UC-8** ConfirmDelivery — покупатель, `SHIPPED → DELIVERED`
+- **Schedulers** — `ExpireUnpaid` (15 мин), `CloseDelivered` (cron 04:00, 14 дней)
+- **Outbox-relay** — `@Scheduled` + `SELECT ... FOR UPDATE SKIP LOCKED`
+
 ## Лицензия
 
 MIT.
