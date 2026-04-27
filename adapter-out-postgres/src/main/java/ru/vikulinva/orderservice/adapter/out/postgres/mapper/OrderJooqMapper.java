@@ -50,6 +50,19 @@ public class OrderJooqMapper {
         pojo.setShippingAddress(toJsonb(order.shippingAddress()));
         pojo.setCreatedAt(toOffset(order.createdAt().toEpochMilli()));
         pojo.setUpdatedAt(toOffset(order.createdAt().toEpochMilli()));
+        pojo.setPaymentId(order.paymentId());
+        if (order.paidAt() != null) {
+            pojo.setPaidAt(toOffset(order.paidAt().toEpochMilli()));
+        }
+        if (order.shippedAt() != null) {
+            pojo.setShippedAt(toOffset(order.shippedAt().toEpochMilli()));
+        }
+        if (order.deliveredAt() != null) {
+            pojo.setDeliveredAt(toOffset(order.deliveredAt().toEpochMilli()));
+        }
+        if (order.closedAt() != null) {
+            pojo.setClosedAt(toOffset(order.closedAt().toEpochMilli()));
+        }
         return pojo;
     }
 
@@ -85,7 +98,12 @@ public class OrderJooqMapper {
             null,                                       // discount: на UC-1 пусто; добавим в UC ApplyPromo
             shippingFee,
             fromJsonb(orderPojo.getShippingAddress()),
-            orderPojo.getCreatedAt().toInstant()
+            orderPojo.getCreatedAt().toInstant(),
+            orderPojo.getPaymentId(),
+            orderPojo.getPaidAt() != null ? orderPojo.getPaidAt().toInstant() : null,
+            orderPojo.getShippedAt() != null ? orderPojo.getShippedAt().toInstant() : null,
+            orderPojo.getDeliveredAt() != null ? orderPojo.getDeliveredAt().toInstant() : null,
+            orderPojo.getClosedAt() != null ? orderPojo.getClosedAt().toInstant() : null
         );
     }
 

@@ -9,6 +9,9 @@ import ru.vikulinva.orderservice.adapter.in.rest.generated.api.OrdersApi;
 import ru.vikulinva.orderservice.adapter.in.rest.generated.model.CancelOrderRequest;
 import ru.vikulinva.orderservice.adapter.in.rest.generated.model.CreateOrderRequest;
 import ru.vikulinva.orderservice.adapter.in.rest.generated.model.Order;
+import ru.vikulinva.orderservice.adapter.in.rest.generated.model.PayOrderRequest;
+import ru.vikulinva.orderservice.adapter.in.rest.generated.model.ShipOrderRequest;
+import ru.vikulinva.orderservice.adapter.in.rest.security.AuthenticatedSeller;
 import ru.vikulinva.orderservice.adapter.in.rest.mapper.OrderRestMapper;
 import ru.vikulinva.orderservice.adapter.in.rest.mapper.RequestHashCalculator;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,8 +19,11 @@ import ru.vikulinva.orderservice.adapter.in.rest.security.AuthenticatedCustomer;
 import ru.vikulinva.orderservice.domain.valueobject.CancellationReason;
 import ru.vikulinva.orderservice.domain.valueobject.OrderId;
 import ru.vikulinva.orderservice.usecase.command.CancelOrderUseCase;
+import ru.vikulinva.orderservice.usecase.command.ConfirmDeliveryUseCase;
 import ru.vikulinva.orderservice.usecase.command.ConfirmOrderUseCase;
 import ru.vikulinva.orderservice.usecase.command.CreateOrderUseCase;
+import ru.vikulinva.orderservice.usecase.command.MarkShippedUseCase;
+import ru.vikulinva.orderservice.usecase.command.PayOrderUseCase;
 import ru.vikulinva.orderservice.usecase.query.GetOrderByIdQuery;
 import ru.vikulinva.orderservice.usecase.query.ListMyOrdersQuery;
 import ru.vikulinva.usecase.UseCaseDispatcher;
@@ -38,15 +44,18 @@ public class OrderController implements OrdersApi {
     private final OrderRestMapper mapper;
     private final RequestHashCalculator requestHashCalculator;
     private final AuthenticatedCustomer authenticatedCustomer;
+    private final AuthenticatedSeller authenticatedSeller;
 
     public OrderController(UseCaseDispatcher useCaseDispatcher,
                             OrderRestMapper mapper,
                             RequestHashCalculator requestHashCalculator,
-                            AuthenticatedCustomer authenticatedCustomer) {
+                            AuthenticatedCustomer authenticatedCustomer,
+                            AuthenticatedSeller authenticatedSeller) {
         this.useCaseDispatcher = useCaseDispatcher;
         this.mapper = mapper;
         this.requestHashCalculator = requestHashCalculator;
         this.authenticatedCustomer = authenticatedCustomer;
+        this.authenticatedSeller = authenticatedSeller;
     }
 
     @Override
@@ -95,6 +104,31 @@ public class OrderController implements OrdersApi {
         var query = new ListMyOrdersQuery(customerId, statusFilter, page, size);
         var pageResult = useCaseDispatcher.dispatch(query);
         return ResponseEntity.ok(mapper.toRest(pageResult));
+    }
+
+    @Override
+    public ResponseEntity<Order> payOrder(UUID id, PayOrderRequest request) {
+        var useCase = new PayOrderUseCase(OrderId.of(id), request.getPaymentId());
+        var order = useCaseDispatcher.dispatch(useCase);
+        return ResponseEntity.ok(mapper.toRest(order));
+    }
+
+    @Override
+    @PreAuthorize("hasRole('seller') or hasRole('admin')")
+    public ResponseEntity<Order> shipOrder(UUID id, ShipOrderRequest request) {
+        var sellerId = authenticatedSeller.currentSellerId();
+        var useCase = new MarkShippedUseCase(OrderId.of(id), sellerId, request.getTrackingNumber());
+        var order = useCaseDispatcher.dispatch(useCase);
+        return ResponseEntity.ok(mapper.toRest(order));
+    }
+
+    @Override
+    @PreAuthorize("hasRole('customer') or hasRole('admin')")
+    public ResponseEntity<Order> deliverOrder(UUID id) {
+        var customerId = authenticatedCustomer.currentCustomerId();
+        var useCase = new ConfirmDeliveryUseCase(OrderId.of(id), customerId);
+        var order = useCaseDispatcher.dispatch(useCase);
+        return ResponseEntity.ok(mapper.toRest(order));
     }
 
     @Override

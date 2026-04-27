@@ -77,7 +77,7 @@ public interface OrderRestMapper {
         dto.setItems(order.items().stream().map(this::toRestItem).toList());
         dto.setShippingAddress(toRestAddress(order.shippingAddress()));
         dto.setReservationId(null);
-        dto.setPaymentId(null);
+        dto.setPaymentId(order.paymentId());
         dto.setCreatedAt(toOffset(order.createdAt()));
         dto.setUpdatedAt(toOffset(order.createdAt()));
         return dto;

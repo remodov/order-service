@@ -3,8 +3,13 @@ package ru.vikulinva.orderservice.domain.aggregate;
 import ru.vikulinva.ddd.AggregateRoot;
 import ru.vikulinva.orderservice.domain.entity.OrderItem;
 import ru.vikulinva.orderservice.domain.event.OrderCancelled;
+import ru.vikulinva.orderservice.domain.event.OrderCompleted;
 import ru.vikulinva.orderservice.domain.event.OrderConfirmed;
 import ru.vikulinva.orderservice.domain.event.OrderCreated;
+import ru.vikulinva.orderservice.domain.event.OrderDelivered;
+import ru.vikulinva.orderservice.domain.event.OrderExpired;
+import ru.vikulinva.orderservice.domain.event.OrderPaid;
+import ru.vikulinva.orderservice.domain.event.OrderShipped;
 import ru.vikulinva.orderservice.domain.valueobject.Address;
 import ru.vikulinva.orderservice.domain.valueobject.CancellationReason;
 import ru.vikulinva.orderservice.domain.valueobject.CustomerId;
@@ -19,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Корень агрегата «Заказ». Защищает инварианты:
@@ -44,6 +50,11 @@ public final class Order extends AggregateRoot<OrderId> {
     private final Money shippingFee;
     private final Address shippingAddress;
     private final Instant createdAt;
+    private UUID paymentId;
+    private Instant paidAt;
+    private Instant shippedAt;
+    private Instant deliveredAt;
+    private Instant closedAt;
 
     private Order(OrderId id,
                    CustomerId customerId,
@@ -112,9 +123,20 @@ public final class Order extends AggregateRoot<OrderId> {
                                   Discount discount,
                                   Money shippingFee,
                                   Address shippingAddress,
-                                  Instant createdAt) {
-        return new Order(id, customerId, sellerId, status, items, discount,
+                                  Instant createdAt,
+                                  UUID paymentId,
+                                  Instant paidAt,
+                                  Instant shippedAt,
+                                  Instant deliveredAt,
+                                  Instant closedAt) {
+        Order order = new Order(id, customerId, sellerId, status, items, discount,
             shippingFee, shippingAddress, createdAt);
+        order.paymentId = paymentId;
+        order.paidAt = paidAt;
+        order.shippedAt = shippedAt;
+        order.deliveredAt = deliveredAt;
+        order.closedAt = closedAt;
+        return order;
     }
 
     @Override
@@ -153,6 +175,12 @@ public final class Order extends AggregateRoot<OrderId> {
     public Instant createdAt() {
         return createdAt;
     }
+
+    public UUID paymentId() { return paymentId; }
+    public Instant paidAt() { return paidAt; }
+    public Instant shippedAt() { return shippedAt; }
+    public Instant deliveredAt() { return deliveredAt; }
+    public Instant closedAt() { return closedAt; }
 
     /**
      * Подтверждение заказа: {@code DRAFT → PENDING_PAYMENT}. Регистрирует
@@ -202,6 +230,85 @@ public final class Order extends AggregateRoot<OrderId> {
         OrderStatus previous = this.status;
         this.status = OrderStatus.CANCELLED;
         registerEvent(new OrderCancelled(id, customerId, sellerId, previous, reason));
+    }
+
+    /**
+     * Оплата подтверждена (вебхук Payment Service): {@code PENDING_PAYMENT → PAID}.
+     * Регистрирует {@link OrderPaid}.
+     */
+    public void markPaid(UUID paymentId, Instant paidAt) {
+        Objects.requireNonNull(paymentId, "paymentId");
+        Objects.requireNonNull(paidAt, "paidAt");
+        if (status != OrderStatus.PENDING_PAYMENT) {
+            throw new IllegalStateException(
+                "Order can only be paid from PENDING_PAYMENT, current: " + status);
+        }
+        this.status = OrderStatus.PAID;
+        this.paymentId = paymentId;
+        this.paidAt = paidAt;
+        registerEvent(new OrderPaid(id, customerId, sellerId, paymentId, total(), paidAt));
+    }
+
+    /**
+     * Передача в доставку (продавец): {@code PAID → SHIPPED}. Регистрирует
+     * {@link OrderShipped} с трек-номером.
+     */
+    public void markShipped(String trackingNumber, Instant shippedAt) {
+        Objects.requireNonNull(trackingNumber, "trackingNumber");
+        Objects.requireNonNull(shippedAt, "shippedAt");
+        if (trackingNumber.isBlank()) {
+            throw new IllegalArgumentException("trackingNumber must not be blank");
+        }
+        if (status != OrderStatus.PAID) {
+            throw new IllegalStateException(
+                "Order can only be shipped from PAID, current: " + status);
+        }
+        this.status = OrderStatus.SHIPPED;
+        this.shippedAt = shippedAt;
+        registerEvent(new OrderShipped(id, customerId, sellerId, trackingNumber, shippedAt));
+    }
+
+    /**
+     * Подтверждение получения (покупатель): {@code SHIPPED → DELIVERED}.
+     */
+    public void confirmDelivery(Instant deliveredAt) {
+        Objects.requireNonNull(deliveredAt, "deliveredAt");
+        if (status != OrderStatus.SHIPPED) {
+            throw new IllegalStateException(
+                "Order can only be delivered from SHIPPED, current: " + status);
+        }
+        this.status = OrderStatus.DELIVERED;
+        this.deliveredAt = deliveredAt;
+        registerEvent(new OrderDelivered(id, customerId, sellerId, deliveredAt));
+    }
+
+    /**
+     * Просрочка ожидания оплаты (планировщик): {@code PENDING_PAYMENT → EXPIRED}.
+     */
+    public void expire(Instant expiredAt) {
+        Objects.requireNonNull(expiredAt, "expiredAt");
+        if (status != OrderStatus.PENDING_PAYMENT) {
+            throw new IllegalStateException(
+                "Order can only expire from PENDING_PAYMENT, current: " + status);
+        }
+        this.status = OrderStatus.EXPIRED;
+        this.closedAt = expiredAt;
+        registerEvent(new OrderExpired(id, customerId, sellerId, expiredAt));
+    }
+
+    /**
+     * Финализация по таймауту (планировщик): {@code DELIVERED → COMPLETED} —
+     * через 14 дней после получения, если не было дисптуа.
+     */
+    public void complete(Instant closedAt) {
+        Objects.requireNonNull(closedAt, "closedAt");
+        if (status != OrderStatus.DELIVERED) {
+            throw new IllegalStateException(
+                "Order can only be completed from DELIVERED, current: " + status);
+        }
+        this.status = OrderStatus.COMPLETED;
+        this.closedAt = closedAt;
+        registerEvent(new OrderCompleted(id, customerId, sellerId, closedAt));
     }
 
     /**

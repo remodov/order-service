@@ -173,6 +173,100 @@ paths:
             application/problem+json:
               schema: { $ref: '#/components/schemas/ProblemDetails' }
 
+  /api/v1/orders/{id}/pay:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+        description: Идентификатор заказа.
+    post:
+      tags: [orders]
+      operationId: payOrder
+      summary: Подтвердить оплату (webhook от Payment Service)
+      description: |
+        Внутренний эндпоинт: Payment Service вызывает его при успешной
+        оплате. Перевод заказа `PENDING_PAYMENT → PAID`. Идемпотентен по
+        `paymentId`: повторный вызов с тем же платежом — no-op.
+
+        Production требует HMAC/JWT-проверку источника; здесь упрощённо
+        полагаемся на сетевой контур.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PayOrderRequest' }
+      responses:
+        '200':
+          description: Заказ оплачен.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/orders/{id}/ship:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [orders]
+      operationId: shipOrder
+      summary: Передать заказ в доставку (продавец)
+      description: |
+        Перевод `PAID → SHIPPED`. Доступно только продавцу-владельцу
+        заказа (ABAC) и admin.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ShipOrderRequest' }
+      responses:
+        '200':
+          description: Заказ передан в доставку.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/orders/{id}/deliver:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [orders]
+      operationId: deliverOrder
+      summary: Подтвердить получение (покупатель)
+      description: |
+        Перевод `SHIPPED → DELIVERED`. Доступно только владельцу заказа.
+      responses:
+        '200':
+          description: Доставка подтверждена.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Order' }
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
   /api/v1/orders/{id}/cancel:
     parameters:
       - name: id
@@ -248,6 +342,18 @@ components:
           type: string
           maxLength: 64
           description: Опциональный промокод. Применение — отдельной командой ApplyPromo (UC расширим в следующих UC).
+
+    PayOrderRequest:
+      type: object
+      required: [paymentId]
+      properties:
+        paymentId: { type: string, format: uuid }
+
+    ShipOrderRequest:
+      type: object
+      required: [trackingNumber]
+      properties:
+        trackingNumber: { type: string, minLength: 1, maxLength: 64 }
 
     OrderSummary:
       type: object

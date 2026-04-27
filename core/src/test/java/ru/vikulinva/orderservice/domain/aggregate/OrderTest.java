@@ -4,8 +4,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import ru.vikulinva.orderservice.domain.entity.OrderItem;
 import ru.vikulinva.orderservice.domain.event.OrderCancelled;
+import ru.vikulinva.orderservice.domain.event.OrderCompleted;
 import ru.vikulinva.orderservice.domain.event.OrderConfirmed;
 import ru.vikulinva.orderservice.domain.event.OrderCreated;
+import ru.vikulinva.orderservice.domain.event.OrderDelivered;
+import ru.vikulinva.orderservice.domain.event.OrderExpired;
+import ru.vikulinva.orderservice.domain.event.OrderPaid;
+import ru.vikulinva.orderservice.domain.event.OrderShipped;
 import ru.vikulinva.orderservice.domain.valueobject.Address;
 import ru.vikulinva.orderservice.domain.valueobject.CancellationReason;
 import ru.vikulinva.orderservice.domain.valueobject.CustomerId;
@@ -169,6 +174,97 @@ class OrderTest {
         assertThatThrownBy(() -> order.cancel(CancellationReason.of("OTHER")))
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("DRAFT");
+    }
+
+    @Test
+    @DisplayName("markPaid: PENDING_PAYMENT → PAID, OrderPaid содержит paymentId и total")
+    void markPaid_emitsOrderPaid() {
+        var order = sampleOrder();
+        order.confirm();
+        order.clearDomainEvents();
+        var paymentId = UUID.randomUUID();
+        var paidAt = Instant.parse("2026-04-02T12:00:00Z");
+
+        order.markPaid(paymentId, paidAt);
+
+        assertThat(order.status()).isEqualTo(OrderStatus.PAID);
+        assertThat(order.paymentId()).isEqualTo(paymentId);
+        assertThat(order.paidAt()).isEqualTo(paidAt);
+        var event = (OrderPaid) order.getEvents().get(0);
+        assertThat(event.paymentId()).isEqualTo(paymentId);
+        assertThat(event.total()).isEqualTo(order.total());
+    }
+
+    @Test
+    @DisplayName("markPaid из DRAFT — IllegalStateException")
+    void markPaid_fromDraft_throws() {
+        var order = sampleOrder();
+        assertThatThrownBy(() -> order.markPaid(UUID.randomUUID(), Instant.now()))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("PENDING_PAYMENT");
+    }
+
+    @Test
+    @DisplayName("markShipped: PAID → SHIPPED, событие содержит trackingNumber")
+    void markShipped_emitsOrderShipped() {
+        var order = sampleOrder();
+        order.confirm();
+        order.markPaid(UUID.randomUUID(), Instant.parse("2026-04-02T12:00:00Z"));
+        order.clearDomainEvents();
+        var shippedAt = Instant.parse("2026-04-03T08:00:00Z");
+
+        order.markShipped("TRACK-1", shippedAt);
+
+        assertThat(order.status()).isEqualTo(OrderStatus.SHIPPED);
+        assertThat(order.shippedAt()).isEqualTo(shippedAt);
+        var event = (OrderShipped) order.getEvents().get(0);
+        assertThat(event.trackingNumber()).isEqualTo("TRACK-1");
+    }
+
+    @Test
+    @DisplayName("confirmDelivery: SHIPPED → DELIVERED")
+    void confirmDelivery_emitsOrderDelivered() {
+        var order = sampleOrder();
+        order.confirm();
+        order.markPaid(UUID.randomUUID(), Instant.parse("2026-04-02T12:00:00Z"));
+        order.markShipped("TRACK-1", Instant.parse("2026-04-03T08:00:00Z"));
+        order.clearDomainEvents();
+        var deliveredAt = Instant.parse("2026-04-05T15:00:00Z");
+
+        order.confirmDelivery(deliveredAt);
+
+        assertThat(order.status()).isEqualTo(OrderStatus.DELIVERED);
+        assertThat(order.deliveredAt()).isEqualTo(deliveredAt);
+        assertThat(order.getEvents().get(0)).isInstanceOf(OrderDelivered.class);
+    }
+
+    @Test
+    @DisplayName("expire: PENDING_PAYMENT → EXPIRED")
+    void expire_emitsOrderExpired() {
+        var order = sampleOrder();
+        order.confirm();
+        order.clearDomainEvents();
+
+        order.expire(Instant.parse("2026-04-01T10:15:00Z"));
+
+        assertThat(order.status()).isEqualTo(OrderStatus.EXPIRED);
+        assertThat(order.getEvents().get(0)).isInstanceOf(OrderExpired.class);
+    }
+
+    @Test
+    @DisplayName("complete: DELIVERED → COMPLETED")
+    void complete_emitsOrderCompleted() {
+        var order = sampleOrder();
+        order.confirm();
+        order.markPaid(UUID.randomUUID(), Instant.parse("2026-04-02T12:00:00Z"));
+        order.markShipped("TRACK", Instant.parse("2026-04-03T08:00:00Z"));
+        order.confirmDelivery(Instant.parse("2026-04-05T15:00:00Z"));
+        order.clearDomainEvents();
+
+        order.complete(Instant.parse("2026-04-19T15:00:00Z"));
+
+        assertThat(order.status()).isEqualTo(OrderStatus.COMPLETED);
+        assertThat(order.getEvents().get(0)).isInstanceOf(OrderCompleted.class);
     }
 
     @Test
