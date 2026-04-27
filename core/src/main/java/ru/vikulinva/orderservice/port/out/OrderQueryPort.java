@@ -2,9 +2,13 @@ package ru.vikulinva.orderservice.port.out;
 
 import ru.vikulinva.hexagonal.OutboundPort;
 import ru.vikulinva.orderservice.domain.valueobject.CustomerId;
+import ru.vikulinva.orderservice.domain.valueobject.OrderId;
 import ru.vikulinva.orderservice.domain.valueobject.OrderStatus;
 import ru.vikulinva.orderservice.usecase.query.dto.OrderSummary;
 import ru.vikulinva.orderservice.usecase.query.dto.PageResult;
+
+import java.time.Instant;
+import java.util.List;
 
 /**
  * Read-side порт для проекций заказов. Реализация — jOOQ в
@@ -24,4 +28,16 @@ public interface OrderQueryPort {
                                               OrderStatus status,
                                               int page,
                                               int size);
+
+    /**
+     * id заказов в статусе PENDING_PAYMENT с {@code created_at < threshold}.
+     * Используется планировщиком ExpireUnpaid (BR-006).
+     */
+    List<OrderId> findExpiredPendingPayment(Instant threshold, int limit);
+
+    /**
+     * id заказов в статусе DELIVERED с {@code delivered_at < threshold}.
+     * Используется планировщиком CloseDelivered.
+     */
+    List<OrderId> findStaleDelivered(Instant threshold, int limit);
 }

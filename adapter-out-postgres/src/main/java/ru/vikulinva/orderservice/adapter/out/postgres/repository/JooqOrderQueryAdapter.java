@@ -13,6 +13,9 @@ import ru.vikulinva.orderservice.port.out.OrderQueryPort;
 import ru.vikulinva.orderservice.usecase.query.dto.OrderSummary;
 import ru.vikulinva.orderservice.usecase.query.dto.PageResult;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Currency;
 import java.util.List;
 import java.util.Map;
@@ -93,5 +96,29 @@ public class JooqOrderQueryAdapter implements OrderQueryPort {
         }).toList();
 
         return new PageResult<>(summaries, total, page, size);
+    }
+
+    @Override
+    public List<OrderId> findExpiredPendingPayment(Instant threshold, int limit) {
+        OffsetDateTime offset = OffsetDateTime.ofInstant(threshold, ZoneOffset.UTC);
+        return dsl.select(ORDERS.ID)
+            .from(ORDERS)
+            .where(ORDERS.STATUS.eq(OrderStatus.PENDING_PAYMENT))
+            .and(ORDERS.CREATED_AT.lt(offset))
+            .orderBy(ORDERS.CREATED_AT.asc())
+            .limit(limit)
+            .fetch(r -> OrderId.of(r.get(ORDERS.ID)));
+    }
+
+    @Override
+    public List<OrderId> findStaleDelivered(Instant threshold, int limit) {
+        OffsetDateTime offset = OffsetDateTime.ofInstant(threshold, ZoneOffset.UTC);
+        return dsl.select(ORDERS.ID)
+            .from(ORDERS)
+            .where(ORDERS.STATUS.eq(OrderStatus.DELIVERED))
+            .and(ORDERS.DELIVERED_AT.lt(offset))
+            .orderBy(ORDERS.DELIVERED_AT.asc())
+            .limit(limit)
+            .fetch(r -> OrderId.of(r.get(ORDERS.ID)));
     }
 }

@@ -81,18 +81,16 @@ clients:
 
 orderservice:
   outbox:
-    poll-interval-ms: 1000   # how often Outbox-relay scans pending events
-    batch-size: 100          # max events per tick
-
-order-service:
-  outbox:
-    relay-fixed-delay: 1000   # ms — Outbox-relay polls outbox table (legacy key, replaced by orderservice.outbox.*)
+    poll-interval-ms: 1000        # how often Outbox-relay scans pending events
+    batch-size: 100               # max events per tick
   expire-unpaid:
-    fixed-delay: 60000        # ms — checks for PENDING_PAYMENT > 15 min
-    timeout-minutes: 15
+    fixed-delay-ms: 60000         # ms — checks for PENDING_PAYMENT > timeout
+    timeout-minutes: 15           # BR-006
+    batch-size: 200
   close-delivered:
-    cron: "0 0 4 * * *"       # daily 04:00
+    cron: "0 0 4 * * *"           # daily 04:00
     window-days: 14
+    batch-size: 1000
 
 logging:
   level:
