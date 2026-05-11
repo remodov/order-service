@@ -1,0 +1,6 @@
+# Корневой Liquibase changelog. Пустой baseline на Ф0 — реальные changeset'ы
+# (orders, order_items, outbox, processed_events, idempotency_keys, refund_sagas,
+# order_summaries, order_timelines, order_audit_log, enum-типы) добавит Ф2 через
+# /ucp-pg-schema-design, версионируя их в changelog/v-1.0/, v-1.1/, … и подключая
+# здесь явными `include`-ами.
+databaseChangeLog: []

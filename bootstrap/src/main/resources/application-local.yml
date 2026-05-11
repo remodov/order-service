@@ -14,11 +14,7 @@ spring:
     bootstrap-servers: localhost:9092
     listener:
       auto-startup: false        # включи вручную, если поднял Kafka и стабы топиков
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: http://localhost:8081/realms/marketplace/protocol/openid-connect/certs
+  # На профиле local активен LocalSecurityConfig (permitAll) — JWK от Keycloak не нужен.
 
 clients:
   catalog:

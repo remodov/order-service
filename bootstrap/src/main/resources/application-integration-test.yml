@@ -6,8 +6,9 @@
 spring:
   cache:
     type: none
-  flyway:
-    locations: classpath:db/migration
+  # Datasource подключается через Testcontainers @ServiceConnection в базовом
+  # классе интеграционных тестов (появится в Ф8 через /ucp-test-design).
+  # Liquibase прогоняется на этом datasource (spring.liquibase.contexts=production из base).
   kafka:
     bootstrap-servers: dummy:0     # не используется в тестах
     producer:

@@ -101,4 +101,4 @@ orderservice:
 
 logging:
   level:
-    ru.vikulinva.orderservice: DEBUG
+    ru.vikulinva.orderservice: INFO
