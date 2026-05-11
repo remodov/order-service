@@ -8,11 +8,18 @@
 
 - Рабочая директория зачищена; в git HEAD (`b44e584`) лежит предыдущая реализация,
   её **игнорируем** — строим заново строго по `docs/spec/`.
-- Стек (по `17-order-service-stack.md`): Java 21, Spring Boot 3, Gradle Kotlin DSL
-  multi-module hexagonal, jOOQ 3.19+ + **Flyway** (миграции), PostgreSQL 16+, Kafka,
-  `ru.vikulinva:usecase-pattern-starter`, `ru.vikulinva:ddd-building-blocks`,
-  MapStruct, Resilience4j, Spring Security OAuth2 Resource Server, Redis (кэш),
-  Micrometer/OTel, Testcontainers + WireMock.
+- Стек (по `17-order-service-stack.md`): Java 21, Spring Boot 3.4.x, Gradle Kotlin DSL
+  multi-module hexagonal, jOOQ 3.19 + **Liquibase** (миграции — решено с пользователем
+  2026-05-11: строка «Flyway» в `17-stack.md` — неточность спеки; вся UCP-обвязка и
+  репо-конвенция на Liquibase), PostgreSQL 16+, Kafka,
+  `ru.vikulinva:usecase-pattern(-starter)`, `ru.vikulinva:ddd-building-blocks`,
+  `ru.vikulinva:hexagonal-architecture-{core,test}` (артефакты в mavenLocal / GitHub
+  Packages `remodov/...`), MapStruct, Resilience4j, Spring Security OAuth2 Resource
+  Server, Redis (кэш), Micrometer/OTel, Testcontainers + WireMock.
+- Модули (репо-конвенция, не «persistence»): `core`, `adapter-in-rest`, `adapter-in-kafka`,
+  `adapter-out-postgres`, `adapter-out-payment`, `adapter-out-catalog`, `adapter-out-kafka`,
+  `bootstrap`, `test-utils`. (Один `adapter-in-rest` на customer/seller/admin — осознанное
+  отступление от `R-HEX-MOD-X3` в пользу репо-конвенции; ABAC/RBAC внутри сервиса.)
 - Подход: **вертикальные срезы, MVP-first** (см. CLAUDE.md, блок «Структура плана»).
   Ф0 — единственная горизонтальная (инфраструктурный bootstrap). Дальше каждая
   фаза = работающий end-to-end кусок: собирается, запускается, покрыт тестами.
@@ -31,9 +38,14 @@
 - Auth: RBAC (`customer`/`seller`/`admin`/`system`) + ABAC по владению; audit log admin-команд; шифрование `Address` at-rest.
 - 15 бизнес-правил `BR-001..BR-015`; каталог ошибок RFC 9457 (`13-order-service-errors.md`).
 
+## Статус
+
+- **Ф0 — ГОТОВА** (ветка `feat/order-service-from-scratch`, коммиты `1e5f7a2` skeleton, `a56ad30` bootstrap). `./gradlew clean build` зелёный, ArchUnit hexagonal-тест PASS, `bootRun --spring.profiles.active=local` поднимается (`docker compose up -d postgres` нужен), `/actuator/health` = UP, без обращений к Keycloak/Kafka. Прежняя реализация (119 .java) удалена; модули пустые (package-info-заглушки), `order-service.openapi.yaml` — placeholder `paths: {}`, `changelog-master.yaml` — пустой baseline.
+- Ф1–Ф8 — не начаты.
+
 ## Фазы
 
-### Ф0 — Skeleton & bootstrap (горизонтальная, инфра)
+### Ф0 — Skeleton & bootstrap (горизонтальная, инфра) ✅
 - `/ucp-hexagonal-design` — multi-module gradle skeleton: `core`, `persistence`, `adapter-in-rest`, `adapter-in-kafka`, `adapter-out-catalog`, `adapter-out-payment`, `adapter-out-kafka` (publisher), `bootstrap`. `settings.gradle.kts` + per-module `build.gradle.kts` (core без Spring/jOOQ), `Application.java` в bootstrap, `package-info.java` в `core/order/{aggregate,port}`, ArchUnit base test.
 - `/ucp-bootstrap-design` — профили `local` / `integration-test` / `production`; production-бины `Clock` / UUID-провайдера; `SecurityConfig` per profile; **Flyway** конфиг; jOOQ codegen из живой схемы; гейтинг Kafka-листенеров по профилю; Jackson-видимость event-payload; `application.yml` каркас.
 - Выход фазы: `./gradlew build` зелёный, `bootRun` поднимается на `local` без живых Keycloak/Kafka.
