@@ -21,6 +21,15 @@ subprojects {
         options.compilerArgs.addAll(listOf("-Xlint:all", "-parameters"))
     }
 
+    // Lombok одинаково во всех модулях (JS-6.6). На VO / Entity / Aggregate он не
+    // используется (records / ручные классы) — но handler'ам / сервисам / событиям нужен.
+    dependencies {
+        "compileOnly"("org.projectlombok:lombok:1.18.34")
+        "annotationProcessor"("org.projectlombok:lombok:1.18.34")
+        "testCompileOnly"("org.projectlombok:lombok:1.18.34")
+        "testAnnotationProcessor"("org.projectlombok:lombok:1.18.34")
+    }
+
     tasks.withType<Test> {
         useJUnitPlatform()
         testLogging {
