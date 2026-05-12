@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: v-1.0-00-create-order-status-enum
+      author: vva
+      comment: 'Enum type order_status (DRAFT..DISPUTE). Стабильный набор — PG enum, чтобы jOOQ codegen дал Java enum.'
+      changes:
+        - sql:
+            sql: >-
+              CREATE TYPE order_status AS ENUM (
+                'DRAFT','PENDING_PAYMENT','PAID','SHIPPED','DELIVERED',
+                'COMPLETED','EXPIRED','CANCELLED','REFUNDED','DISPUTE'
+              )
+            stripComments: true
+      rollback:
+        - sql:
+            sql: DROP TYPE order_status

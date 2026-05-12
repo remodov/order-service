@@ -1,6 +1,5 @@
-# Корневой Liquibase changelog. Пустой baseline на Ф0 — реальные changeset'ы
-# (orders, order_items, outbox, processed_events, idempotency_keys, refund_sagas,
-# order_summaries, order_timelines, order_audit_log, enum-типы) добавит Ф2 через
-# /ucp-pg-schema-design, версионируя их в changelog/v-1.0/, v-1.1/, … и подключая
-# здесь явными `include`-ами.
-databaseChangeLog: []
+# Корневой Liquibase changelog. Версионируется по релизам: v-1.0/, v-1.1/, …
+# Никогда не редактируй уже применённый changeSet — добавляй новый файл и include.
+databaseChangeLog:
+  - include: { file: db/changelog/v-1.0/00-enum-types.yaml }
+  - include: { file: db/changelog/v-1.0/01-initial-schema.yaml }
