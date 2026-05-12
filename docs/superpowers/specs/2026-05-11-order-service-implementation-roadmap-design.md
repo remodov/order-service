@@ -41,7 +41,8 @@
 ## Статус
 
 - **Ф0 — ГОТОВА** (ветка `feat/order-service-from-scratch`, коммиты `1e5f7a2` skeleton, `a56ad30` bootstrap). `./gradlew clean build` зелёный, ArchUnit hexagonal-тест PASS, `bootRun --spring.profiles.active=local` поднимается (`docker compose up -d postgres` нужен), `/actuator/health` = UP, без обращений к Keycloak/Kafka. Прежняя реализация (119 .java) удалена; модули пустые (package-info-заглушки), `order-service.openapi.yaml` — placeholder `paths: {}`, `changelog-master.yaml` — пустой baseline.
-- Ф1–Ф8 — не начаты.
+- **Ф1 — ГОТОВА** (план `docs/superpowers/plans/2026-05-11-phase1-order-domain.md`; коммиты `feat(Ф1): доменный слой Order …`, `feat(Ф1): production-бины DateTimeService / UuidGenerator …`). Модуль `core`: VO (`Money`/`Quantity`/`Discount`+`PercentageDiscount`/`FixedDiscount`/`Address`/типизированные id/`OrderStatus`/`DisputeDecision`/`DisputeReason`), Entity `OrderItem` (immutable), AggregateRoot `Order` (методы ЖЦ по матрице §4, инварианты `BR-001/003/004/012/013/014`, `create()`/`fromPersistence()`, время — параметром `Instant now`), 13 доменных событий + `OrderItemSnapshot`, `OrderRepository extends AggregateRepository + findByIdForUpdate`, `core/service` `DateTimeService`/`UuidGenerator`, иерархия доменных исключений с кодами из `13-errors`. Lombok добавлен модульно (`subprojects`). 45 unit-тестов (инварианты + матрица переходов + споры BR-007) — зелёные. Production-бины `DateTimeService`/`UuidGenerator` в `ServiceBeansConfig`. `./gradlew clean build` зелёный, ArchUnit PASS, `bootRun` на `local` UP. Ревью `/ucp-ddd-tactical-review` — только Замечания (слабая типизация `OrderInvalidStateException.expected`, `[serial]` без `serialVersionUID`, конфликт `R-MOD-1` ↔ `BS-5` по `core/service/`, `@Getter` на событиях), без MUST. **Долги Ф1:** HTTP-маппинг доменных исключений → RFC 9457 — в Ф3 (`/ucp-error-handling-design`); `OrderConfirmed` etc. сериализуются с `createdAt` (от `DomainEvent` либ) — спека-контракт говорит `occurredAt`, сверить в Ф4.
+- Ф2–Ф8 — не начаты.
 
 ## Фазы
 
@@ -50,7 +51,7 @@
 - `/ucp-bootstrap-design` — профили `local` / `integration-test` / `production`; production-бины `Clock` / UUID-провайдера; `SecurityConfig` per profile; **Flyway** конфиг; jOOQ codegen из живой схемы; гейтинг Kafka-листенеров по профилю; Jackson-видимость event-payload; `application.yml` каркас.
 - Выход фазы: `./gradlew build` зелёный, `bootRun` поднимается на `local` без живых Keycloak/Kafka.
 
-### Ф1 — Домен `Order` (Tier C DDD)
+### Ф1 — Домен `Order` (Tier C DDD) ✅
 - `/ucp-ddd-tactical-design` — агрегат `Order` (методы `addItem`/`removeItem`/`applyPromo`/`removePromo`/`confirm`/`fixReservation`/`pay`/`ship`/`confirmDelivery`/`close`/`expire`/`cancel`/`openDispute`/`resolveDispute`), сущность `OrderItem`, VO (`Money`, `Quantity`, `Discount` sealed: `PercentageDiscount`/`FixedDiscount`, `Address`, типизированные id `OrderId`/`OrderItemId`/`CustomerId`/`SellerId`/`ProductId`/`ReservationId`/`PaymentId`), enum `OrderStatus`, все доменные события (`OrderCreated`, `OrderConfirmed`, `OrderReservationFailed`, `OrderPaid`, `OrderShipped`, `OrderDelivered`, `OrderCompleted`, `OrderCancelled`, `OrderExpired`, `DisputeOpened`, `DisputeResolved`, `OrderRefunded`, `OrderPaymentFailed`), интерфейс `OrderRepository` (с `findByIdForUpdate`). Инварианты `BR-001`, `BR-003`, `BR-004`, `BR-012`, `BR-013`, `BR-014` — внутри агрегата.
 - → `/ucp-ddd-tactical-review`.
 - Выход: домен компилируется, unit-тесты на инварианты и переходы зелёные.
