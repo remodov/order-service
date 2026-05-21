@@ -2,7 +2,7 @@ package ru.vikulinva.orderservice.domain.valueobject;
 
 /**
  * Фаза жизненного цикла заказа. Терминальные ({@link #COMPLETED}, {@link #EXPIRED},
- * {@link #REFUNDED}) — переходов из них нет. См. {@code docs/spec/04-order-service-lifecycle.md}.
+ * {@link #REFUNDED}) — переходов из них нет. См. {@code docs/spec/aggregates/order.md}.
  */
 public enum OrderStatus {
 

@@ -1,0 +1,208 @@
+{
+  "main": {
+    "id": "a5306b649eec2f86",
+    "type": "split",
+    "children": [
+      {
+        "id": "98d08de10f19cc0a",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "b0b993eef5e935d6",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "Новая вкладка"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "0120a564d7f8e12f",
+    "type": "split",
+    "children": [
+      {
+        "id": "31debbb37b3f267e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "58cb932daa185a1a",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Файловый менеджер"
+            }
+          },
+          {
+            "id": "039c8a92a3e0a65a",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Поиск"
+            }
+          },
+          {
+            "id": "654814699135c528",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Закладки"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 298.5
+  },
+  "right": {
+    "id": "ecf7038d8002beba",
+    "type": "split",
+    "children": [
+      {
+        "id": "6329857ea3c380ca",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c5a9868f7ccc5cc1",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": true,
+                "extraContext": true,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Обратные ссылки"
+            }
+          },
+          {
+            "id": "b0ddbf88010daeb8",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Исходящие ссылки"
+            }
+          },
+          {
+            "id": "17e40551877afe79",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Теги"
+            }
+          },
+          {
+            "id": "ec55238ab8c84da3",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Все свойства"
+            }
+          },
+          {
+            "id": "196057d4c29e7eab",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Структура"
+            }
+          }
+        ],
+        "currentTab": 4
+      }
+    ],
+    "direction": "horizontal",
+    "width": 284.5
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Меню быстрого перехода": false,
+      "graph:Граф": false,
+      "canvas:Создать новый холст": false,
+      "daily-notes:Сегодняшняя заметка": false,
+      "templates:Вставить шаблон": false,
+      "command-palette:Открыть палитру команд": false,
+      "bases:Создать новую базу": false
+    }
+  },
+  "active": "b0b993eef5e935d6",
+  "lastOpenFiles": [
+    "docs/spec-v2/aggregates/dispute.md",
+    "docs/spec-v2/aggregates/order.md",
+    "docs/spec-v2/aggregates/refund.md",
+    "docs/spec-v2/order-service-spec.md",
+    "docs/spec-v2/aggregates/order.md.tmp.14742.fa0423997dab",
+    "docs/order-service-spec.md",
+    "docs/spec-v2/aggregates",
+    "docs/spec-v2",
+    "docs/superpowers/specs/2026-05-11-order-service-implementation-roadmap-design.md",
+    "docs/spec/03-order-service-model.md",
+    "docs/spec/02-order-service-language.md",
+    "docs/spec/16-order-service-nfr.md",
+    "docs/spec/15-order-service-acceptance.md",
+    "docs/spec/12-order-service-sagas.md",
+    "docs/spec/14-order-service-integrations/order-service-publishes-orderconfirmed.md",
+    "docs/spec/14-order-service-integrations/order-service-from-inventory-itemreserved.md",
+    "docs/spec/14-order-service-integrations/order-service-from-customer-bff.md",
+    "docs/spec/14-order-service-integrations/order-service-from-admin-bff.md",
+    "docs/spec/13-order-service-errors.md",
+    "docs/spec/10-order-service-use-cases.md",
+    "docs/spec/09-order-service-queries.md",
+    "docs/spec/order-service.md",
+    "docs/spec/01-order-service-context.md",
+    "docs/superpowers/plans/2026-05-11-phase0-skeleton-bootstrap.md",
+    "docs/order-service-spec.md.tmp.14742.29ed3aba8599",
+    "docs/spec/11-order-service-ui.md"
+  ]
+}

@@ -6,6 +6,6 @@
  * {@code HandlePaymentSucceeded}, …). Каждая — {@code UseCaseCommand<R>} + {@code UseCaseHandler}.
  *
  * <p>Наполняется в Ф3+ через {@code /ucp-pattern-design} по
- * {@code docs/spec/07-order-service-commands.md}.
+ * {@code docs/spec/aggregates/order.md}.
  */
 package ru.vikulinva.orderservice.usecase.command;

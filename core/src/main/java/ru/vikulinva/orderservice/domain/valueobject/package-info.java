@@ -6,6 +6,6 @@
  * {@code PaymentId}) и enum {@code OrderStatus}.
  *
  * <p>Наполняется в Ф1 через {@code /ucp-ddd-tactical-design} по
- * {@code docs/spec/03-order-service-model.md}.
+ * {@code docs/spec/aggregates/order.md}.
  */
 package ru.vikulinva.orderservice.domain.valueobject;

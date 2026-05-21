@@ -1,0 +1,1 @@
+/Users/vva/IdeaProjects/usecase-pattern-skills/.claude/docs/validation-style-guide.md

@@ -6,6 +6,6 @@
  * (для read-your-own-writes).
  *
  * <p>Наполняется в Ф5 через {@code /ucp-cqrs-design} по
- * {@code docs/spec/09-order-service-queries.md}.
+ * {@code docs/spec/aggregates/order.md}.
  */
 package ru.vikulinva.orderservice.usecase.query;

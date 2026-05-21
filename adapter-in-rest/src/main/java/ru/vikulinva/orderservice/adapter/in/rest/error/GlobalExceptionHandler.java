@@ -17,7 +17,7 @@ import ru.vikulinva.orderservice.domain.exception.ValidationException;
 
 /**
  * Единая трансляция исключений в RFC 9457 {@code application/problem+json}. Каждое тело несёт стабильный
- * {@code code} из каталога ошибок ({@code docs/spec/13-order-service-errors.md}), {@code type} (URI ошибки),
+ * {@code code} из каталога ошибок ({@code docs/spec/aggregates/order.md}), {@code type} (URI ошибки),
  * {@code title}, {@code detail}, {@code instance}, и {@code violations} для валидации.
  */
 @RestControllerAdvice
@@ -26,7 +26,7 @@ public class GlobalExceptionHandler {
 
     private static final String TYPE_PREFIX = "https://vikulin-va.ru/errors/";
 
-    /** Соответствие {@code code} → HTTP-статус по docs/spec/13-order-service-errors.md. */
+    /** Соответствие {@code code} → HTTP-статус по docs/spec/aggregates/order.md. */
     private static final Map<String, HttpStatus> STATUS_BY_CODE = Map.ofEntries(
         Map.entry("ORDER_NOT_FOUND", HttpStatus.NOT_FOUND),
         Map.entry("PRODUCT_NOT_FOUND", HttpStatus.NOT_FOUND),

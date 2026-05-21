@@ -1,0 +1,1 @@
+/Users/vva/IdeaProjects/usecase-pattern-skills/.claude/docs/caching-style-guide.md

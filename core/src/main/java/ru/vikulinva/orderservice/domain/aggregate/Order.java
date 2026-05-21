@@ -52,7 +52,7 @@ import ru.vikulinva.orderservice.domain.valueobject.SellerId;
  * один промокод ({@code BR-003}), фиксацию цены позиции после подтверждения ({@code BR-004}),
  * неотрицательность {@code total} ({@code BR-012}), минимальную сумму при подтверждении
  * ({@code BR-013}, 100 ₽), один продавец на заказ ({@code BR-014}). Переходы статусов — строго
- * по матрице {@code docs/spec/04-order-service-lifecycle.md}; нарушение → {@link OrderInvalidStateException}.
+ * по матрице {@code docs/spec/aggregates/order.md}; нарушение → {@link OrderInvalidStateException}.
  * Время передаётся параметром {@code Instant now} — домен детерминирован.
  */
 public final class Order extends AggregateRoot<OrderId> {

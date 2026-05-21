@@ -5,6 +5,6 @@
  * {@code BR-004}, {@code BR-012}, {@code BR-013}, {@code BR-014}).
  *
  * <p>Наполняется в Ф1 через {@code /ucp-ddd-tactical-design} по
- * {@code docs/spec/03-order-service-model.md} и {@code docs/spec/04-order-service-lifecycle.md}.
+ * {@code docs/spec/aggregates/order.md} и {@code docs/spec/aggregates/order.md}.
  */
 package ru.vikulinva.orderservice.domain.aggregate;
