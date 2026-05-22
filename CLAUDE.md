@@ -20,18 +20,19 @@
 
 ### Спецификация
 
-Если в проекте есть `docs/spec/` — это источник правды по сервису. Точка входа —
-landing с frontmatter `type: service`, обычно `docs/spec/00-<service>/<service>.md`.
+`docs/spec/` — источник правды по сервису (формат — Use Case спецификация Bounded
+Context). Точка входа — корневой файл контекста `docs/spec/order-service-spec.md`
+(секции уровня контекста); секции уровня агрегата — в
+`docs/spec/aggregates/{order,dispute,refund}.md`.
 
-**Читай spec-landing в начале сессии, не в конце** — позднее чтение churn-ит
+**Читай корневой файл в начале сессии, не в конце** — позднее чтение churn-ит
 prompt-кэш и удорожает каждый ход; раннее чтение оседает в тёплом префиксе.
-Опционально: `@docs/spec/00-<svc>/<svc>.md` **снаружи** managed-блока авто-грузит
-landing в каждый контекст (не для тяжёлых спек — раздувает always-loaded).
+Опционально: `@docs/spec/order-service-spec.md` **снаружи** managed-блока авто-грузит
+корень в каждый контекст (не для тяжёлых спек — раздувает always-loaded).
 
-Wikilinks `[[Name]]` (`[[CreateProduct]]`, `[[PRODUCT_NOT_FOUND]]`,
-`[[06-<svc>-rules#BR-008]]`) резолвятся `find docs/spec -name "Name.md"`. Per-item
-карточки имеют типизированный frontmatter (`type: command|event|error|query|aggregate|integration`)
-— это машиночитаемый контракт, ему можно доверять.
+Ссылки между разделами — по именам/якорям (`[Жизненный цикл](#2-жизненный-цикл)`);
+машинная идентичность чанков — минимальный frontmatter (`context`, `aggregate`).
+Техника (схема БД, стек, топики) — только в разделе «Техническая реализация».
 
 ### Кодогенерация и ревью — через скиллы
 
@@ -47,7 +48,7 @@ Wikilinks `[[Name]]` (`[[CreateProduct]]`, `[[PRODUCT_NOT_FOUND]]`,
 | Spring Security + OAuth2 + ABAC + audit | `/ucp-auth-design` |
 | Spring Boot bootstrap, Liquibase, jOOQ, профили | `/ucp-bootstrap-design` |
 | Aggregate + VO + Domain Event + Repository (Tier C) | `/ucp-ddd-tactical-design` |
-| Интеграционные / unit тесты по `15-*-acceptance.md` | `/ucp-test-design` |
+| Тесты по разделу «Критерии приёмки» | `/ucp-test-design` |
 | Ревью UseCase / Handler / Controller | `/ucp-pattern-review` |
 | Ревью REST-контракта | `/ucp-api-review` |
 | Ревью DDD-кода | `/ucp-ddd-tactical-review` |
@@ -131,24 +132,16 @@ style-guide. **`Agent` / `Task`-форк под ucp-скилл запрещён*
 <!-- END ucp-skills -->
 
 ```
-@docs/spec/00-<your-service>/<your-service>.md
+@docs/spec/order-service-spec.md
 ```
 
-Caveat: большие спеки (сотни строк) раздувают всегда-загруженный контекст.
-Для тяжёлых спек лучше не `@import`, а ранее ручное чтение по триггеру
-задачи (см. абзац выше).
+Caveat: большие спеки раздувают всегда-загруженный контекст — для тяжёлых лучше
+не `@import`, а раннее ручное чтение по триггеру задачи (см. абзац выше).
 
-Wikilinks вида `[[Name]]` (например `[[CreateProduct]]`,
-`[[PRODUCT_NOT_FOUND]]`, `[[06-<service>-rules#BR-008]]`) резолвятся
-поиском по `docs/spec/`:
-
-```
-find docs/spec -name "Name.md"
-```
-
-Per-item карточки имеют типизированный frontmatter (`type: command` /
-`event` / `error` / `query` / `aggregate` / `integration`) — это
-машиночитаемая часть спеки, ей можно доверять как контракту.
+Секции уровня агрегата — в `docs/spec/aggregates/{order,dispute,refund}.md`. Ссылки
+между разделами — по именам/якорям (`[Жизненный цикл](#2-жизненный-цикл)`); машинная
+идентичность чанков — frontmatter `context`/`aggregate`. Техника (схема БД, стек) —
+только в разделе «Техническая реализация».
 
 ### Кодогенерация и ревью — через скиллы
 
@@ -164,7 +157,7 @@ Per-item карточки имеют типизированный frontmatter (`
 | Spring Security + OAuth2 + ABAC + audit | `/ucp-auth-design` |
 | Spring Boot bootstrap, Liquibase, jOOQ, профили | `/ucp-bootstrap-design` |
 | Aggregate + VO + Domain Event + Repository (Tier C) | `/ucp-ddd-tactical-design` |
-| Интеграционные / unit тесты по `15-*-acceptance.md` | `/ucp-test-design` |
+| Тесты по разделу «Критерии приёмки» | `/ucp-test-design` |
 | Ревью UseCase / Handler / Controller | `/ucp-pattern-review` |
 | Ревью REST-контракта | `/ucp-api-review` |
 | Ревью DDD-кода | `/ucp-ddd-tactical-review` |
