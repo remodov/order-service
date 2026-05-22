@@ -1,7 +1,7 @@
 ---
 context: order-service
 aggregate: Dispute
-tier: C
+level: 3
 ---
 
 # Агрегат `Dispute`

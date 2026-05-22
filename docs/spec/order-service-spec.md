@@ -1,10 +1,10 @@
 ---
 context: order-service
 bounded-context: Order
-tier: C
+level: 3
 ---
 
-# Order Service — спецификация Bounded Context «Order» (Tier C)
+# Order Service — спецификация Bounded Context «Order» (Уровень 3)
 
 > **Корневой файл контекста.** Здесь — секции уровня **контекста** (общие для всех агрегатов).
 > Секции уровня **агрегата** (Доменная модель, Жизненный цикл, Доступ, Бизнес-правила, Команды,
