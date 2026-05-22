@@ -1,6 +1,7 @@
 ---
 context: order-service
 aggregate: Refund
+tier: C
 ---
 
 # Агрегат `Refund`

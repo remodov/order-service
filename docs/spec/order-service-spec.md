@@ -1,6 +1,7 @@
 ---
 context: order-service
 bounded-context: Order
+tier: C
 ---
 
 # Order Service — спецификация Bounded Context «Order» (Tier C)

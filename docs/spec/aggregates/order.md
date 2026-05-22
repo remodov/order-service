@@ -1,6 +1,7 @@
 ---
 context: order-service
 aggregate: Order
+tier: C
 ---
 
 # Агрегат `Order`
